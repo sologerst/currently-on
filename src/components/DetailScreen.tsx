@@ -122,8 +122,8 @@ export function DetailScreen({
         )}
         {!state.displayName && (
           <p className="text-sm text-black/45">
-            Set a display name on <Link href="/friends">Friends</Link> to
-            recommend titles.
+            Sign in on <Link href="/friends">Friends</Link> and set a display
+            name to recommend titles.
           </p>
         )}
         {trackedChoices.length === 0 && <span className="hidden" />}

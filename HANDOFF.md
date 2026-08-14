@@ -11,7 +11,23 @@ Mobile-first Next.js PWA. Full UI from the product breakdown: home 2×3 tiles, f
 - **Vercel team:** `timthinkswellcs-projects` (thinkswell account), project `currently-on`
 - **Local path:** `/Users/timothygerst/Projects/currently-on`
 
-Data is **demo catalogs + `localStorage`**. No live APIs, no real accounts, no OS push.
+## What shipped (auth + Supabase)
+
+- **Supabase project:** `currently-on` (`itmxzrilzvhymbefnwgd`, us-east-1)
+- **Dashboard:** https://supabase.com/dashboard/project/itmxzrilzvhymbefnwgd
+- Schema + RLS: `profiles`, `tracked_items`, `diary_entries`, `notifications`, `recommendations`, `recommendation_reactions`, `recommendation_comments`
+- App: `@supabase/ssr` clients, `src/proxy.ts` session refresh, `/auth/confirm`, magic link + OTP on Friends
+- Signed-in users persist via Supabase behind `useTracker()`; guests still use demo `localStorage`
+
+### One-time dashboard / Vercel setup
+
+1. **Supabase Auth URL config** → https://supabase.com/dashboard/project/itmxzrilzvhymbefnwgd/auth/url-configuration
+   - Site URL: `https://currently-on.vercel.app`
+   - Redirect URLs: `http://localhost:3000/auth/confirm`, `https://currently-on.vercel.app/auth/confirm`
+2. **Vercel env** (Production + Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL=https://itmxzrilzvhymbefnwgd.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=` (from project API keys; publishable key preferred)
+3. Local: copy `.env.example` → `.env.local` (gitignored).
 
 ## Stack and map
 
@@ -20,7 +36,10 @@ Data is **demo catalogs + `localStorage`**. No live APIs, no real accounts, no O
 | Types | `src/lib/types.ts` |
 | Seed catalog (swap for APIs) | `src/lib/catalog.ts` |
 | Category colors / tabs | `src/lib/categories.ts` |
-| Client store | `src/lib/tracker.tsx` (`currently-on-v1` in localStorage) |
+| Client store | `src/lib/tracker.tsx` (`currently-on-v1` localStorage for guests; Supabase when signed in) |
+| Supabase remote helpers | `src/lib/tracker-remote.ts` |
+| Supabase clients | `src/lib/supabase/*` |
+| Schema SQL | `supabase/migrations/` |
 | Shell / PWA | `src/components/AppShell.tsx`, `InstallBanner.tsx`, `public/sw.js`, `public/manifest.webmanifest` |
 | Screens | `src/components/*Screen.tsx` + `src/app/**/page.tsx` |
 
@@ -30,13 +49,9 @@ Do **not** show IMDb / Rotten Tomatoes marks. Keep generic “Look it up” web 
 
 ## Next work (in order)
 
-### 1. Auth + backend (Supabase)
+### 1. Finish auth ops (manual)
 
-Replace `localStorage` with a real user:
-
-- Auth (email/magic link or OAuth)
-- Tables: profiles (display name), tracked items, diary, notifications, recommendations / reactions / comments
-- Keep the same UI; swap `useTracker()` internals behind the existing API in `src/lib/tracker.tsx`
+Confirm Site URL + redirect URLs + Vercel env, then smoke-test magic link / OTP on Friends.
 
 ### 2. Live catalogs
 
@@ -50,9 +65,9 @@ Keep `getCatalog` / `searchCatalog` / `getItem` as the interface. Wire:
 
 Cache server-side (Route Handlers or Vercel) so keys stay off the client.
 
-### 3. Friends as a real social layer
+### 3. Friends realtime polish
 
-Shared feed, reactions, comments, “add to my list” against Postgres + realtime (Supabase Realtime). First-time display name stays, but it must be tied to an account.
+Shared feed already hits Postgres. Add Supabase Realtime subscriptions for new recommendations / reactions / comments.
 
 ### 4. Push (after data is server-side)
 

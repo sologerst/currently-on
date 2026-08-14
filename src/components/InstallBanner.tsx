@@ -1,27 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 type BIPEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: string }>;
 };
 
+function subscribeNoop() {
+  return () => {};
+}
+
+function getStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    ("standalone" in navigator &&
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone))
+  );
+}
+
+function getIsIos() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) && !getStandalone();
+}
+
 export function InstallBanner() {
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
-  const [ios, setIos] = useState(false);
-  const [standalone, setStandalone] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const standalone = useSyncExternalStore(
+    subscribeNoop,
+    getStandalone,
+    () => true,
+  );
+  const ios = useSyncExternalStore(subscribeNoop, getIsIos, () => false);
 
   useEffect(() => {
-    const standaloneMode =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator &&
-        Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
-    setStandalone(standaloneMode);
-    const ua = navigator.userAgent;
-    setIos(/iPhone|iPad|iPod/.test(ua) && !standaloneMode);
-
     const onBIP = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BIPEvent);
