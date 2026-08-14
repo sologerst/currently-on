@@ -25,3 +25,7 @@ Next.js (App Router) + TypeScript + Tailwind. Hosted on Vercel. Content catalogs
 ## Demo data
 
 Tracked lists, ratings, notes, diary, notifications, and the friends feed persist in the browser. Clearing site data resets the demo.
+
+## Next steps / cloud handoff
+
+See [HANDOFF.md](./HANDOFF.md) for what shipped, file map, and the ordered backlog (Supabase, live catalogs, social, push). Use that file when continuing this repo in a Cursor cloud agent.
