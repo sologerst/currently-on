@@ -13,6 +13,17 @@ Mobile-first Next.js PWA. Full UI from the product breakdown: home 2×3 tiles, f
 
 Data is **demo catalogs + `localStorage`**. No live APIs, no real accounts, no OS push.
 
+## GitHub checks
+
+Workflows under `.github/workflows/` mirror the Nashville Oktoberfest / Bolt Farm Next.js suite:
+
+- `ci.yml` — quality (lint changed files, build, tsc, audit) + vitest shards
+- `security.yml` — gitleaks
+- `claude-review.yml` — optional (`ANTHROPIC_API_KEY` repo secret)
+- `e2e-smoke.yml` — Playwright vs `https://currently-on.vercel.app` (schedule / manual)
+
+Optional: mark CI + Security as required status checks on `main` in GitHub branch protection.
+
 ## Stack and map
 
 | Area | Where |

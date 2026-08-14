@@ -1,0 +1,92 @@
+name: CI
+
+# Mirrors the Nashville Oktoberfest / Bolt Farm Next.js check suite, mapped to npm:
+#   Compile → next build + tsc   Lint → eslint (changed files)
+#   Deps audit → npm audit       Test (partition N/4) → vitest --shard
+# Every job runs without real secrets — Supabase clients initialize lazily.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality (Build · Types · Audit)
+    runs-on: ubuntu-latest
+    env:
+      # Placeholder PUBLIC env so `next build` can construct browser clients.
+      # NOT real secrets — nothing connects during build.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need history to diff changed files for the lint report
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Lint — ESLint (changed files)
+        # Blocks the job when a changed file introduces lint errors. Historical
+        # debt on untouched files is not scanned. The HIGH audit step below
+        # stays advisory.
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          [ -z "$BASE" ] && BASE="${{ github.event.before }}"
+          if ! git cat-file -e "$BASE" 2>/dev/null; then
+            echo "Base ref unavailable; skipping changed-file lint."
+            exit 0
+          fi
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE"...HEAD \
+            | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' || true)
+          if [ -z "$FILES" ]; then
+            echo "No lintable files changed."
+            exit 0
+          fi
+          echo "Linting:"; echo "$FILES"
+          echo "$FILES" | xargs npx eslint
+
+      # Build BEFORE tsc: `next build` generates next-env.d.ts and .next/types
+      # that the full `tsc --noEmit` pass depends on. (next build also type-checks.)
+      - name: Compile — next build
+        run: npm run build
+
+      - name: Types — tsc --noEmit
+        run: npm run check
+
+      - name: Deps audit — block on CRITICAL (prod)
+        # --omit=dev ignores dev-tooling CVEs (never shipped to users). Blocks on
+        # critical only. The step below reports HIGHs without failing the job.
+        run: npm audit --audit-level=critical --omit=dev
+
+      - name: Deps audit — HIGH report (non-blocking)
+        if: always()
+        continue-on-error: true
+        run: npm audit --audit-level=high --omit=dev
+
+  test:
+    name: Test (partition ${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Vitest (shard ${{ matrix.shard }}/4)
+        run: npx vitest run --shard=${{ matrix.shard }}/4
