@@ -75,12 +75,8 @@ jobs:
         run: npm audit --audit-level=high --omit=dev
 
   test:
-    name: Test (partition ${{ matrix.shard }}/4)
+    name: Test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,5 +84,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Vitest (shard ${{ matrix.shard }}/4)
-        run: npx vitest run --shard=${{ matrix.shard }}/4
+      - name: Vitest
+        # Single job for now — vitest --shard N/M fails when there are fewer
+        # test files than shards. Reintroduce a matrix once the suite grows.
+        run: npm test

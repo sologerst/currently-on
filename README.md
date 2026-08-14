@@ -28,7 +28,7 @@ Same scope as the Nashville Oktoberfest / Bolt Farm Next.js suite:
 
 | Workflow | What it does |
 | --- | --- |
-| `CI` | Changed-file ESLint, `next build`, `tsc --noEmit`, npm audit (critical blocks; high advisory), vitest ×4 shards |
+| `CI` | Changed-file ESLint, `next build`, `tsc --noEmit`, npm audit (critical blocks; high advisory), vitest |
 | `Security` | gitleaks secret scan on PR/push + weekly |
 | `Claude Code Review` | Optional AI PR review when `ANTHROPIC_API_KEY` is set |
 | `E2E Smoke` | Playwright against production every 6h / on demand (not a PR gate) |

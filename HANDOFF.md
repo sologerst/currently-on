@@ -17,7 +17,7 @@ Data is **demo catalogs + `localStorage`**. No live APIs, no real accounts, no O
 
 Workflows under `.github/workflows/` mirror the Nashville Oktoberfest / Bolt Farm Next.js suite:
 
-- `ci.yml` — quality (lint changed files, build, tsc, audit) + vitest shards
+- `ci.yml` — quality (lint changed files, build, tsc, audit) + vitest
 - `security.yml` — gitleaks
 - `claude-review.yml` — optional (`ANTHROPIC_API_KEY` repo secret)
 - `e2e-smoke.yml` — Playwright vs `https://currently-on.vercel.app` (schedule / manual)
