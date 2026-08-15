@@ -1,23 +1,30 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
+import { AuthSignIn } from "@/components/AuthSignIn";
 import { CATEGORY_META, MEDIA_KINDS } from "@/lib/categories";
 import { getByKind, getItem } from "@/lib/catalog";
 import { useTracker } from "@/lib/tracker";
 import type { CategoryKind } from "@/lib/types";
 
 export function FriendsScreen() {
+  const searchParams = useSearchParams();
   const {
+    ready,
+    signedIn,
+    userEmail,
     state,
     setDisplayName,
+    signOut,
     recommend,
     react,
     comment,
     addFromFriend,
     reactions,
   } = useTracker();
-  const [name, setName] = useState(state.displayName);
+  const [name, setName] = useState("");
   const [kind, setKind] = useState<CategoryKind>("tv");
   const [itemId, setItemId] = useState("");
   const [note, setNote] = useState("");
@@ -52,12 +59,35 @@ export function FriendsScreen() {
     setNote("");
   }
 
+  if (!ready) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-8 text-sm text-black/45">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!signedIn) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-8">
+        <h1 className="font-display text-3xl">Friends</h1>
+        <p className="mt-2 text-sm text-black/55">
+          Sign in to join the shared recommendation feed. Catalog browsing still
+          works as a guest.
+        </p>
+        <div className="mt-4">
+          <AuthSignIn errorMessage={searchParams.get("error")} />
+        </div>
+      </div>
+    );
+  }
+
   if (!state.displayName) {
     return (
       <div className="mx-auto max-w-lg px-4 py-8">
         <h1 className="font-display text-3xl">Friends</h1>
         <p className="mt-2 text-sm text-black/55">
-          Choose a display name to join the shared recommendation feed.
+          Choose a display name tied to {userEmail ?? "your account"}.
         </p>
         <form onSubmit={onName} className="mt-4 flex gap-2">
           <input
@@ -70,6 +100,13 @@ export function FriendsScreen() {
             Continue
           </button>
         </form>
+        <button
+          type="button"
+          className="mt-4 text-xs text-black/45 underline"
+          onClick={() => void signOut()}
+        >
+          Sign out
+        </button>
       </div>
     );
   }
@@ -77,8 +114,19 @@ export function FriendsScreen() {
   return (
     <div>
       <div className="bg-[#F2B705] px-4 py-4 text-[#14161A]">
-        <h1 className="font-display text-3xl">Friends</h1>
-        <p className="text-sm">Posting as {state.displayName}</p>
+        <div className="mx-auto flex max-w-lg items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-3xl">Friends</h1>
+            <p className="text-sm">Posting as {state.displayName}</p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 text-xs underline"
+            onClick={() => void signOut()}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
       <div className="mx-auto max-w-lg space-y-4 px-3 py-4">
         <form
@@ -108,15 +156,13 @@ export function FriendsScreen() {
             onChange={(e) => setItemId(e.target.value)}
           >
             <option value="">Pick a tracked title</option>
-            {(trackedOfKind.length
-              ? trackedOfKind
-              : getByKind(kind)
-            ).map((item) =>
-              item ? (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ) : null,
+            {(trackedOfKind.length ? trackedOfKind : getByKind(kind)).map(
+              (item) =>
+                item ? (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ) : null,
             )}
           </select>
           <textarea
