@@ -40,6 +40,8 @@ export type TrackedRecord = {
   recommendedBy?: string;
   /** Cached title for live-catalog ids that aren't in the seed module. */
   itemName?: string;
+  /** Cached poster/cover for list rows when browse page doesn't include the item. */
+  imageUrl?: string;
 };
 
 export type Comment = {

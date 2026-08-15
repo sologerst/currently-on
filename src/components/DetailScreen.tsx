@@ -103,7 +103,9 @@ export function DetailScreen({
                   background: meta.hex,
                   color: meta.onDark ? "#12141A" : "#fff",
                 }}
-                onClick={() => track(kind, id, undefined, item.name)}
+                onClick={() =>
+                  track(kind, id, undefined, item.name, item.imageUrl)
+                }
               >
                 Add to my list
               </button>
@@ -126,7 +128,7 @@ export function DetailScreen({
           <StarRating
             value={rec?.myRating ?? 0}
             onChange={(n) => {
-              if (!rec) track(kind, id, undefined, item.name);
+              if (!rec) track(kind, id, undefined, item.name, item.imageUrl);
               setRating(kind, id, n);
             }}
           />
@@ -137,7 +139,7 @@ export function DetailScreen({
             className="min-h-28 w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] p-3 text-sm outline-none focus:border-foreground/25"
             value={rec?.myReview ?? ""}
             onChange={(e) => {
-              if (!rec) track(kind, id, undefined, item.name);
+              if (!rec) track(kind, id, undefined, item.name, item.imageUrl);
               setReview(kind, id, e.target.value);
             }}
           />

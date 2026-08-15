@@ -135,6 +135,7 @@ type TrackerApi = {
     id: string,
     status?: MyStatus,
     itemName?: string,
+    imageUrl?: string,
   ) => void;
   untrack: (kind: CategoryKind, id: string) => void;
   getTracked: (kind: CategoryKind, id: string) => TrackedRecord | undefined;
@@ -143,6 +144,7 @@ type TrackerApi = {
     id: string,
     status: MyStatus,
     itemName?: string,
+    imageUrl?: string,
   ) => void;
   setRating: (kind: CategoryKind, id: string, rating: number) => void;
   setReview: (kind: CategoryKind, id: string, review: string) => void;
@@ -305,7 +307,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         });
       },
       getTracked,
-      track: (kind, id, status, itemName) => {
+      track: (kind, id, status, itemName, imageUrl) => {
         let saved: TrackedRecord | null = null;
         const title = itemName || getItem(kind, id)?.name || id;
         const note = `Added ${title} to your list`;
@@ -315,6 +317,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           saved = ensure(copy, kind, id, {
             ...(status ? { myStatus: status } : {}),
             ...(itemName ? { itemName } : {}),
+            ...(imageUrl ? { imageUrl } : {}),
           });
           copy.notifications.unshift({
             id: tempId,
@@ -348,7 +351,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           await deleteTracked(supabase, userId, kind, id);
         });
       },
-      setStatus: (kind, id, status, itemName) => {
+      setStatus: (kind, id, status, itemName, imageUrl) => {
         let saved: TrackedRecord | null = null;
         let diaryEntry: DiaryEntry | null = null;
         patch((s) => {
@@ -356,6 +359,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           saved = ensure(copy, kind, id, {
             myStatus: status,
             ...(itemName ? { itemName } : {}),
+            ...(imageUrl ? { imageUrl } : {}),
           });
           const title =
             itemName ||
