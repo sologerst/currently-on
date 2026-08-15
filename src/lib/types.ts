@@ -28,6 +28,7 @@ export type CatalogItem = {
   nextLabel?: string;
   releaseDate?: string;
   notYetStreaming?: boolean;
+  imageUrl?: string;
 };
 
 export type TrackedRecord = {
@@ -37,6 +38,8 @@ export type TrackedRecord = {
   myRating: number;
   myReview: string;
   recommendedBy?: string;
+  /** Cached title for live-catalog ids that aren't in the seed module. */
+  itemName?: string;
 };
 
 export type Comment = {

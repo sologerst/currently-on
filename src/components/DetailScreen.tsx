@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge, Poster, StarRating } from "@/components/MediaBits";
 import { CATEGORY_META, lookItUpUrl } from "@/lib/categories";
 import { getItem } from "@/lib/catalog";
+import { fetchCatalogItem } from "@/lib/catalog-client";
 import { useTracker } from "@/lib/tracker";
-import type { CategoryKind, MyStatus } from "@/lib/types";
+import type { CatalogItem, CategoryKind } from "@/lib/types";
 
 export function DetailScreen({
   kind,
@@ -15,24 +16,37 @@ export function DetailScreen({
   kind: CategoryKind;
   id: string;
 }) {
-  const item = getItem(kind, id);
+  const seed = getItem(kind, id);
+  const [item, setItem] = useState<CatalogItem | null>(seed ?? null);
+  const [loading, setLoading] = useState(!seed);
   const meta = CATEGORY_META[kind];
   const { getTracked, track, setRating, setReview, recommend, state } =
     useTracker();
   const rec = getTracked(kind, id);
   const [note, setNote] = useState("");
 
-  const trackedChoices = useMemo(
-    () =>
-      Object.values(state.tracked)
-        .map((t) => getItem(t.kind, t.itemId))
-        .filter(Boolean),
-    [state.tracked],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    if (seed) {
+      setItem(seed);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    void fetchCatalogItem(kind, id)
+      .then((row) => {
+        if (!cancelled) setItem(row);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kind, id, seed]);
 
-  if (!item) {
-    return <p className="p-4">Not found.</p>;
-  }
+  if (loading) return <p className="p-4 text-sm text-black/45">Loading…</p>;
+  if (!item) return <p className="p-4">Not found.</p>;
 
   return (
     <div>
@@ -44,7 +58,12 @@ export function DetailScreen({
       </div>
       <div className="mx-auto max-w-lg space-y-4 px-3 py-4">
         <div className="flex gap-4">
-          <Poster name={item.name} kind={kind} large />
+          <Poster
+            name={item.name}
+            kind={kind}
+            large
+            imageUrl={item.imageUrl}
+          />
           <div className="space-y-2">
             {item.author && <p className="text-sm">{item.author}</p>}
             <div className="flex flex-wrap gap-1">
@@ -62,7 +81,7 @@ export function DetailScreen({
                 type="button"
                 className="rounded-full px-3 py-1 text-sm text-white"
                 style={{ background: meta.hex }}
-                onClick={() => track(kind, id)}
+                onClick={() => track(kind, id, undefined, item.name)}
               >
                 Add to my list
               </button>
@@ -83,7 +102,7 @@ export function DetailScreen({
           <StarRating
             value={rec?.myRating ?? 0}
             onChange={(n) => {
-              if (!rec) track(kind, id);
+              if (!rec) track(kind, id, undefined, item.name);
               setRating(kind, id, n);
             }}
           />
@@ -92,7 +111,7 @@ export function DetailScreen({
             className="min-h-24 w-full rounded-xl border border-black/10 bg-white p-2 text-sm"
             value={rec?.myReview ?? ""}
             onChange={(e) => {
-              if (!rec) track(kind, id);
+              if (!rec) track(kind, id, undefined, item.name);
               setReview(kind, id, e.target.value);
             }}
           />
@@ -112,7 +131,7 @@ export function DetailScreen({
               className="mt-2 rounded-full px-3 py-1 text-sm text-white"
               style={{ background: meta.hex }}
               onClick={() => {
-                recommend(kind, id, note);
+                recommend(kind, id, note, item.name);
                 setNote("");
               }}
             >
@@ -126,7 +145,6 @@ export function DetailScreen({
             name to recommend titles.
           </p>
         )}
-        {trackedChoices.length === 0 && <span className="hidden" />}
       </div>
     </div>
   );

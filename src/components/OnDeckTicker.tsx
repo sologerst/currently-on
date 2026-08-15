@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { CATEGORY_META } from "@/lib/categories";
-import { upcomingIso, upcomingItems } from "@/lib/catalog";
+import { upcomingIso } from "@/lib/catalog";
+import { fetchUpcomingCatalog } from "@/lib/catalog-client";
+import type { CatalogItem } from "@/lib/types";
 
 function daysUntil(iso: string) {
   const t = new Date(iso + "T00:00:00").getTime();
@@ -13,7 +16,22 @@ function daysUntil(iso: string) {
 }
 
 export function OnDeckTicker() {
-  const items = upcomingItems().slice(0, 8);
+  const [items, setItems] = useState<CatalogItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchUpcomingCatalog()
+      .then((rows) => {
+        if (!cancelled) setItems(rows.slice(0, 8));
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (items.length === 0) return null;
   return (
     <div className="border-b border-black/8 bg-white">
@@ -26,7 +44,7 @@ export function OnDeckTicker() {
           const iso = upcomingIso(item);
           return (
             <Link
-              key={item.id}
+              key={`${item.kind}:${item.id}`}
               href={`/${item.kind}/${item.id}`}
               className="flex shrink-0 items-center gap-2 rounded-full border border-black/8 bg-[#F6F7F9] px-2 py-1"
             >
@@ -35,9 +53,11 @@ export function OnDeckTicker() {
                 style={{ background: meta.hex }}
               />
               <span className="max-w-28 truncate text-xs">{item.name}</span>
-              <span className="font-mono text-[10px] text-black/45">
-                {daysUntil(iso)}
-              </span>
+              {iso !== "9999-12-31" && (
+                <span className="font-mono text-[10px] text-black/45">
+                  {daysUntil(iso)}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -130,16 +130,36 @@ type TrackerApi = {
   state: PersistedState;
   signOut: () => Promise<void>;
   setDisplayName: (name: string) => void;
-  track: (kind: CategoryKind, id: string, status?: MyStatus) => void;
+  track: (
+    kind: CategoryKind,
+    id: string,
+    status?: MyStatus,
+    itemName?: string,
+  ) => void;
   untrack: (kind: CategoryKind, id: string) => void;
   getTracked: (kind: CategoryKind, id: string) => TrackedRecord | undefined;
-  setStatus: (kind: CategoryKind, id: string, status: MyStatus) => void;
+  setStatus: (
+    kind: CategoryKind,
+    id: string,
+    status: MyStatus,
+    itemName?: string,
+  ) => void;
   setRating: (kind: CategoryKind, id: string, rating: number) => void;
   setReview: (kind: CategoryKind, id: string, review: string) => void;
-  recommend: (kind: CategoryKind, id: string, note: string) => void;
+  recommend: (
+    kind: CategoryKind,
+    id: string,
+    note: string,
+    itemName?: string,
+  ) => void;
   react: (recId: string, emoji: string) => void;
   comment: (recId: string, text: string) => void;
-  addFromFriend: (kind: CategoryKind, id: string, friend: string) => void;
+  addFromFriend: (
+    kind: CategoryKind,
+    id: string,
+    friend: string,
+    itemName?: string,
+  ) => void;
   markAllRead: () => void;
   reactions: string[];
 };
@@ -285,18 +305,17 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         });
       },
       getTracked,
-      track: (kind, id, status) => {
+      track: (kind, id, status, itemName) => {
         let saved: TrackedRecord | null = null;
-        const note = `Added ${getItem(kind, id)?.name ?? id} to your list`;
+        const title = itemName || getItem(kind, id)?.name || id;
+        const note = `Added ${title} to your list`;
         const tempId = crypto.randomUUID();
         patch((s) => {
           const copy = structuredClone(s);
-          saved = ensure(
-            copy,
-            kind,
-            id,
-            status ? { myStatus: status } : undefined,
-          );
+          saved = ensure(copy, kind, id, {
+            ...(status ? { myStatus: status } : {}),
+            ...(itemName ? { itemName } : {}),
+          });
           copy.notifications.unshift({
             id: tempId,
             text: note,
@@ -329,14 +348,20 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           await deleteTracked(supabase, userId, kind, id);
         });
       },
-      setStatus: (kind, id, status) => {
+      setStatus: (kind, id, status, itemName) => {
         let saved: TrackedRecord | null = null;
         let diaryEntry: DiaryEntry | null = null;
         patch((s) => {
           const copy = structuredClone(s);
-          saved = ensure(copy, kind, id, { myStatus: status });
-          const item = getItem(kind, id);
-          if (item && isFinishedStatus(kind, status)) {
+          saved = ensure(copy, kind, id, {
+            myStatus: status,
+            ...(itemName ? { itemName } : {}),
+          });
+          const title =
+            itemName ||
+            saved.itemName ||
+            getItem(kind, id)?.name;
+          if (title && isFinishedStatus(kind, status)) {
             const already = copy.diary.some(
               (d: DiaryEntry) => d.itemId === id && d.kind === kind,
             );
@@ -344,7 +369,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
               diaryEntry = {
                 itemId: id,
                 kind,
-                name: item.name,
+                name: title,
                 dateFinished: new Date().toISOString(),
                 personalRating: copy.tracked[trackKey(kind, id)].myRating,
               };
@@ -386,16 +411,19 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           await upsertTracked(supabase, userId, saved);
         });
       },
-      recommend: (kind, id, note) => {
-        const item = getItem(kind, id);
-        if (!item || !state.displayName) return;
+      recommend: (kind, id, note, itemName) => {
+        const title =
+          itemName ||
+          state.tracked[`${kind}:${id}`]?.itemName ||
+          getItem(kind, id)?.name;
+        if (!title || !state.displayName) return;
         const tempId = crypto.randomUUID();
         const rec: Recommendation = {
           id: tempId,
           author: state.displayName,
           itemKind: kind,
           itemId: id,
-          itemName: item.name,
+          itemName: title,
           note,
           timestamp: new Date().toISOString(),
           reactions: {},
@@ -407,7 +435,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           const row = await insertRecommendation(supabase, userId, {
             kind,
             itemId: id,
-            itemName: item.name,
+            itemName: title,
             note,
           });
           setState((s) => ({
@@ -475,13 +503,14 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           }));
         });
       },
-      addFromFriend: (kind, id, friend) => {
+      addFromFriend: (kind, id, friend, itemName) => {
         let saved: TrackedRecord | null = null;
         patch((s) => {
           const copy = structuredClone(s);
           saved = ensure(copy, kind, id, {
             myStatus: "recommended" as MyStatus,
             recommendedBy: friend,
+            ...(itemName ? { itemName } : {}),
           });
           return copy;
         });

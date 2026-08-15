@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Poster } from "@/components/MediaBits";
 import { CATEGORY_META, cycleStatus, lookItUpUrl, tabsFor } from "@/lib/categories";
-import { getByKind, upcomingIso } from "@/lib/catalog";
+import { upcomingIso } from "@/lib/catalog";
+import { fetchCatalogBrowse, fetchCatalogItem } from "@/lib/catalog-client";
 import { useTracker } from "@/lib/tracker";
 import type { CatalogItem, CategoryKind, MyStatus } from "@/lib/types";
 
@@ -27,7 +28,7 @@ function ItemCard({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
   return (
     <article className="flex gap-3 rounded-2xl border border-black/8 bg-[#F6F7F9] p-3">
       <Link href={`/${kind}/${item.id}`}>
-        <Poster name={item.name} kind={kind} />
+        <Poster name={item.name} kind={kind} imageUrl={item.imageUrl} />
       </Link>
       <div className="min-w-0 flex-1">
         <Link href={`/${kind}/${item.id}`} className="font-display text-base">
@@ -42,7 +43,7 @@ function ItemCard({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
           {item.rating ? <Badge>{item.rating}</Badge> : null}
           {item.platform ? <Badge>{item.platform}</Badge> : null}
           {item.genre ? <Badge>{item.genre}</Badge> : null}
-          {item.genres?.map((g) => (
+          {item.genres?.slice(0, 3).map((g) => (
             <Badge key={g}>{g}</Badge>
           ))}
           {item.notYetStreaming ? <Badge>not yet streaming</Badge> : null}
@@ -61,12 +62,13 @@ function ItemCard({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
             className="rounded-full px-3 py-1 text-xs text-white"
             style={{ background: meta.hex }}
             onClick={() => {
-              if (!rec) track(kind, item.id);
+              if (!rec) track(kind, item.id, undefined, item.name);
               else
                 setStatus(
                   kind,
                   item.id,
                   cycleStatus(kind, rec.myStatus) as MyStatus,
+                  item.name,
                 );
             }}
           >
@@ -88,27 +90,84 @@ function ItemCard({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
 
 export function CategoryScreen({ kind }: { kind: CategoryKind }) {
   const meta = CATEGORY_META[kind];
-  const catalog = getByKind(kind);
   const { state, getTracked } = useTracker();
   const tabs = tabsFor(kind);
   const [tab, setTab] = useState(tabs[0].id);
   const [q, setQ] = useState("");
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+  const [trackedExtras, setTrackedExtras] = useState<CatalogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<string>("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const handle = window.setTimeout(() => {
+      setLoading(true);
+      void fetchCatalogBrowse(kind, q)
+        .then((items) => {
+          if (cancelled) return;
+          setCatalog(items);
+          setSource(kind === "tv" || kind === "movies" ? "live" : "seed");
+        })
+        .catch(() => {
+          if (!cancelled) setCatalog([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, q.trim() ? 250 : 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [kind, q]);
+
+  // Resolve tracked titles that aren't in the current browse/search page.
+  useEffect(() => {
+    let cancelled = false;
+    const trackedIds = Object.values(state.tracked)
+      .filter((t) => t.kind === kind)
+      .map((t) => t.itemId);
+    const known = new Set(catalog.map((c) => c.id));
+    const missing = trackedIds.filter((id) => !known.has(id));
+    if (missing.length === 0) {
+      setTrackedExtras([]);
+      return;
+    }
+    void Promise.all(missing.map((id) => fetchCatalogItem(kind, id))).then(
+      (rows) => {
+        if (cancelled) return;
+        setTrackedExtras(rows.filter(Boolean) as CatalogItem[]);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [state.tracked, catalog, kind]);
+
+  const byId = useMemo(() => {
+    const map = new Map<string, CatalogItem>();
+    for (const item of [...catalog, ...trackedExtras]) map.set(item.id, item);
+    return map;
+  }, [catalog, trackedExtras]);
 
   const trackedList = useMemo(() => {
-    return catalog.filter((item) => {
-      const rec = getTracked(kind, item.id);
-      if (!rec) return false;
-      if (tab === "recommended") return rec.myStatus === "recommended" || rec.recommendedBy;
-      return rec.myStatus === tab;
-    });
-  }, [catalog, kind, tab, getTracked, state.tracked]);
+    return Object.values(state.tracked)
+      .filter((t) => t.kind === kind)
+      .filter((t) => {
+        if (tab === "recommended")
+          return t.myStatus === "recommended" || Boolean(t.recommendedBy);
+        return t.myStatus === tab;
+      })
+      .map((t) => byId.get(t.itemId))
+      .filter(Boolean) as CatalogItem[];
+  }, [state.tracked, kind, tab, byId]);
 
   const counts = Object.fromEntries(
     tabs.map((t) => [
       t.id,
-      catalog.filter((item) => {
-        const rec = getTracked(kind, item.id);
-        if (!rec) return false;
+      Object.values(state.tracked).filter((rec) => {
+        if (rec.kind !== kind) return false;
         if (t.id === "recommended")
           return rec.myStatus === "recommended" || Boolean(rec.recommendedBy);
         return rec.myStatus === t.id;
@@ -116,13 +175,10 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
     ]),
   );
 
-  const searchHits = catalog.filter((i) =>
-    i.name.toLowerCase().includes(q.trim().toLowerCase()),
-  );
+  const searchHits = catalog;
   const suggested = catalog.slice(0, 6);
   const friendRecs = state.recommendations.filter(
-    (r) =>
-      r.itemKind === kind && !getTracked(kind, r.itemId),
+    (r) => r.itemKind === kind && !getTracked(kind, r.itemId),
   );
   const friendNames = [...new Set(friendRecs.map((r) => r.author))];
   const [friendFilter, setFriendFilter] = useState<string>("all");
@@ -131,7 +187,7 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
       ? friendRecs
       : friendRecs.filter((r) => r.author === friendFilter);
 
-  const comingUp = catalog
+  const comingUp = [...catalog, ...trackedExtras]
     .filter((i) => upcomingIso(i) !== "9999-12-31")
     .sort((a, b) => upcomingIso(a).localeCompare(upcomingIso(b)))[0];
 
@@ -140,6 +196,7 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
       <div className="px-4 py-4 text-white" style={{ background: meta.hex }}>
         <p className="font-mono text-[10px] uppercase tracking-widest opacity-80">
           Currently On
+          {source === "live" ? " · TMDb" : ""}
         </p>
         <h1 className="font-display text-3xl">{meta.label}</h1>
       </div>
@@ -150,8 +207,14 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
           placeholder={`Search ${meta.label.toLowerCase()}`}
           className="w-full rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2 text-sm"
         />
-        {q.trim() && (
+        {loading && (
+          <p className="text-sm text-black/45">Loading catalog…</p>
+        )}
+        {q.trim() && !loading && (
           <div className="space-y-2">
+            {searchHits.length === 0 && (
+              <p className="text-sm text-black/45">No matches.</p>
+            )}
             {searchHits.map((item) => (
               <ItemCard key={item.id} item={item} kind={kind} />
             ))}
@@ -167,7 +230,10 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
               className="shrink-0 rounded-full px-3 py-1.5 text-xs"
               style={
                 tab === t.id
-                  ? { background: meta.hex, color: meta.onDark ? "#14161A" : "#fff" }
+                  ? {
+                      background: meta.hex,
+                      color: meta.onDark ? "#14161A" : "#fff",
+                    }
                   : { background: "#F6F7F9", color: "#14161A" }
               }
             >
@@ -185,7 +251,11 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
                 href={`/${kind}/${item.id}`}
                 className="w-24 shrink-0"
               >
-                <Poster name={item.name} kind={kind} />
+                <Poster
+                  name={item.name}
+                  kind={kind}
+                  imageUrl={item.imageUrl}
+                />
                 <p className="mt-1 truncate text-xs">{item.name}</p>
               </Link>
             ))}
