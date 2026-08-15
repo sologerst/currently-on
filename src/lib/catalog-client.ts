@@ -9,16 +9,16 @@ async function getJson<T>(url: string): Promise<T> {
 export async function fetchCatalogBrowse(
   kind: CategoryKind,
   q = "",
-): Promise<CatalogItem[]> {
+): Promise<{ items: CatalogItem[]; source: string }> {
   const params = new URLSearchParams({
     action: "browse",
     kind,
   });
   if (q.trim()) params.set("q", q.trim());
-  const data = await getJson<{ items: CatalogItem[] }>(
+  const data = await getJson<{ items: CatalogItem[]; source?: string }>(
     `/api/catalog?${params}`,
   );
-  return data.items ?? [];
+  return { items: data.items ?? [], source: data.source ?? "seed" };
 }
 
 export async function fetchCatalogSearch(

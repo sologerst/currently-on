@@ -20,7 +20,7 @@ The app runs standalone (`display: standalone`) with its own icon and theme.
 
 ## Stack
 
-Next.js (App Router) + TypeScript + Tailwind. Hosted on Vercel. TV and Movies browse/search via TMDb (`/api/catalog`, server-only keys). Other categories still use seed data in `src/lib/catalog.ts`.
+Next.js (App Router) + TypeScript + Tailwind. Hosted on Vercel. TV/Movies via TMDb and Books via Open Library (`/api/catalog`, server-side). Music and Podcasts still use seed data in `src/lib/catalog.ts`.
 
 ## Checks (GitHub Actions)
 

@@ -47,6 +47,7 @@ Optional: mark CI + Security as required status checks on `main` in GitHub branc
 | Types | `src/lib/types.ts` |
 | Seed catalog (non-live kinds + TMDb fallback) | `src/lib/catalog.ts` |
 | TMDb provider (server) | `src/lib/providers/tmdb.ts` |
+| Open Library provider (server) | `src/lib/providers/open-library.ts` |
 | Catalog API | `src/app/api/catalog/route.ts` |
 | Catalog client helpers | `src/lib/catalog-client.ts` |
 | Category colors / tabs | `src/lib/categories.ts` |
@@ -69,9 +70,9 @@ Confirm Site URL + redirect URLs + Vercel env, then smoke-test magic link / OTP 
 
 ### 2. Live catalogs
 
-- **TV / Movies (TMDb):** shipped via `src/lib/providers/tmdb.ts` + `/api/catalog`. Server-only env: `TMDB_READ_ACCESS_TOKEN` (preferred) and/or `TMDB_API_KEY`. Add both to Vercel Production + Preview. Falls back to seed catalog if unset.
+- **TV / Movies (TMDb):** shipped via `src/lib/providers/tmdb.ts` + `/api/catalog`. Server-only env: `TMDB_READ_ACCESS_TOKEN` (preferred) and/or `TMDB_API_KEY`.
+- **Books (Open Library):** shipped via `src/lib/providers/open-library.ts` — no API key required.
 - Still todo:
-  - Books: Google Books or Open Library
   - Podcasts: Podcast Index or Listen Notes
   - Music: Spotify or MusicBrainz
   - Optional later: Watchmode / Streaming Availability for “where to watch”

@@ -57,7 +57,8 @@ export function FriendsScreen() {
   useEffect(() => {
     let cancelled = false;
     const missing = Object.values(state.tracked).filter((t) => {
-      if (t.kind !== "tv" && t.kind !== "movies") return false;
+      if (t.kind !== "tv" && t.kind !== "movies" && t.kind !== "books")
+        return false;
       if (getItem(t.kind, t.itemId)) return false;
       if (t.itemName) return false;
       return !liveById[`${t.kind}:${t.itemId}`];
