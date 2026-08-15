@@ -1,0 +1,55 @@
+name: Claude Code Review
+
+# Automated AI review on every PR (the "Claude Code Review / claude-review" check).
+# Requires an ANTHROPIC_API_KEY repo secret. Easiest setup: run `/install-github-app`
+# from Claude Code, which installs the GitHub App and adds the secret for you.
+# Without the secret this job is a green no-op (see the step `if:` guards).
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    name: claude-review
+    runs-on: ubuntu-latest
+    # Never run on forks (they can't access the secret anyway).
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    # Secrets can't be referenced in a job-level `if:`, so surface presence as an
+    # env flag and gate the steps on it. Result: with no ANTHROPIC_API_KEY the
+    # steps skip and the job is a green no-op, instead of red-failing the PR.
+    env:
+      HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ env.HAS_ANTHROPIC_KEY == 'true' }}
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        if: ${{ env.HAS_ANTHROPIC_KEY == 'true' }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request for Currently On — a mobile-first Next.js PWA
+            that tracks Music / TV / Movies / Podcasts / Books, with a Friends feed.
+            Focus on:
+            - Correctness and potential bugs in tracker / catalog / auth flows
+            - Security (auth, secret handling, Supabase RLS assumptions, input validation)
+            - Client-side persistence vs signed-in server data integrity
+            - Performance and obvious React / Next.js footguns
+            - Keeping the UI light-theme and avoiding trademarked review badges
+
+            The PR branch is already checked out in the working directory.
+            Use `gh pr comment` for top-level feedback and
+            `mcp__github_inline_comment__create_inline_comment` (with confirmed: true)
+            for specific lines. Only post GitHub comments — keep it concise.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"

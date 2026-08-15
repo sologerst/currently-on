@@ -29,6 +29,17 @@ Mobile-first Next.js PWA. Full UI from the product breakdown: home 2×3 tiles, f
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=` (from project API keys; publishable key preferred)
 3. Local: copy `.env.example` → `.env.local` (gitignored).
 
+## GitHub checks
+
+Workflows under `.github/workflows/` mirror the Nashville Oktoberfest / Bolt Farm Next.js suite:
+
+- `ci.yml` — quality (lint changed files, build, tsc, audit) + vitest
+- `security.yml` — gitleaks
+- `claude-review.yml` — optional (`ANTHROPIC_API_KEY` repo secret)
+- `e2e-smoke.yml` — Playwright vs `https://currently-on.vercel.app` (schedule / manual)
+
+Optional: mark CI + Security as required status checks on `main` in GitHub branch protection.
+
 ## Stack and map
 
 | Area | Where |

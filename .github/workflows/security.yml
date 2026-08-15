@@ -1,0 +1,38 @@
+name: Security
+
+# Secret scanning (gitleaks): blocks leaked Supabase/Vercel/API keys before they
+# enter git history. Dependency auditing lives in the CI "Quality" job.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC — catch newly-disclosed issues
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+# gitleaks-action lists the PR's commits via the GitHub API to scan them; that
+# needs pull-requests:read. Without an explicit block the job inherits the repo's
+# default token permissions, which often omit it — the action then fails with
+# 403 "Resource not accessible by integration" on /pulls/{n}/commits.
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so pushes are scanned end-to-end
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Free for personal accounts & public repos. If this repo is ever moved
+          # under a GitHub *organization*, add a (free) GITLEAKS_LICENSE secret.
