@@ -104,10 +104,10 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
     const handle = window.setTimeout(() => {
       setLoading(true);
       void fetchCatalogBrowse(kind, q)
-        .then((items) => {
+        .then(({ items, source: src }) => {
           if (cancelled) return;
           setCatalog(items);
-          setSource(kind === "tv" || kind === "movies" ? "live" : "seed");
+          setSource(src);
         })
         .catch(() => {
           if (!cancelled) setCatalog([]);
@@ -196,7 +196,11 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
       <div className="px-4 py-4 text-white" style={{ background: meta.hex }}>
         <p className="font-mono text-[10px] uppercase tracking-widest opacity-80">
           Currently On
-          {source === "live" ? " · TMDb" : ""}
+          {source === "tmdb"
+            ? " · TMDb"
+            : source === "open-library"
+              ? " · Open Library"
+              : ""}
         </p>
         <h1 className="font-display text-3xl">{meta.label}</h1>
       </div>
