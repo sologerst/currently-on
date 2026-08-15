@@ -20,6 +20,12 @@ import {
   searchMusicBrainz,
 } from "@/lib/providers/musicbrainz";
 import {
+  browseItunesPodcasts,
+  getItunesPodcastItem,
+  isItunesPodcastsConfigured,
+  searchItunesPodcasts,
+} from "@/lib/providers/itunes-podcasts";
+import {
   getByKind,
   getItem,
   searchCatalog,
@@ -27,7 +33,13 @@ import {
 } from "@/lib/catalog";
 import type { CatalogItem, CategoryKind } from "@/lib/types";
 
-const LIVE_KINDS: CategoryKind[] = ["tv", "movies", "books", "music"];
+const LIVE_KINDS: CategoryKind[] = [
+  "tv",
+  "movies",
+  "books",
+  "music",
+  "podcasts",
+];
 
 function isTmdbKind(kind: string): kind is "tv" | "movies" {
   return kind === "tv" || kind === "movies";
@@ -41,8 +53,16 @@ function isMusic(kind: string): kind is "music" {
   return kind === "music";
 }
 
-function isLiveKind(kind: string): kind is "tv" | "movies" | "books" | "music" {
-  return isTmdbKind(kind) || isBooks(kind) || isMusic(kind);
+function isPodcasts(kind: string): kind is "podcasts" {
+  return kind === "podcasts";
+}
+
+function isLiveKind(
+  kind: string,
+): kind is "tv" | "movies" | "books" | "music" | "podcasts" {
+  return (
+    isTmdbKind(kind) || isBooks(kind) || isMusic(kind) || isPodcasts(kind)
+  );
 }
 
 export async function GET(request: Request) {
@@ -72,6 +92,10 @@ export async function GET(request: Request) {
         const live = await getMusicBrainzItem(id);
         if (live) return NextResponse.json({ item: live });
       }
+      if (isPodcasts(kind) && isItunesPodcastsConfigured()) {
+        const live = await getItunesPodcastItem(id);
+        if (live) return NextResponse.json({ item: live });
+      }
       const seed = getItem(kind as CategoryKind, id);
       return NextResponse.json({ item: seed ?? null });
     }
@@ -87,6 +111,8 @@ export async function GET(request: Request) {
           liveHits.push(...(await searchOpenLibrary(q)));
         } else if (isMusic(kind) && isMusicBrainzConfigured()) {
           liveHits.push(...(await searchMusicBrainz(q)));
+        } else if (isPodcasts(kind) && isItunesPodcastsConfigured()) {
+          liveHits.push(...(await searchItunesPodcasts(q)));
         } else if (!kind) {
           if (isTmdbConfigured()) {
             liveHits.push(...(await searchTmdbMulti(q)));
@@ -97,6 +123,9 @@ export async function GET(request: Request) {
           if (isMusicBrainzConfigured()) {
             liveHits.push(...(await searchMusicBrainz(q)));
           }
+          if (isItunesPodcastsConfigured()) {
+            liveHits.push(...(await searchItunesPodcasts(q)));
+          }
         }
       } else if (isTmdbKind(kind) && isTmdbConfigured()) {
         liveHits.push(...(await browseTmdb(kind)));
@@ -104,6 +133,8 @@ export async function GET(request: Request) {
         liveHits.push(...(await browseOpenLibrary()));
       } else if (isMusic(kind) && isMusicBrainzConfigured()) {
         liveHits.push(...(await browseMusicBrainz()));
+      } else if (isPodcasts(kind) && isItunesPodcastsConfigured()) {
+        liveHits.push(...(await browseItunesPodcasts()));
       } else if (isLiveKind(kind)) {
         liveHits.push(...getByKind(kind));
       }
@@ -138,6 +169,14 @@ export async function GET(request: Request) {
         ? await searchMusicBrainz(qTrim)
         : await browseMusicBrainz();
       return NextResponse.json({ items, source: "musicbrainz" });
+    }
+
+    if (isPodcasts(kind)) {
+      const qTrim = q.trim();
+      const items = qTrim
+        ? await searchItunesPodcasts(qTrim)
+        : await browseItunesPodcasts();
+      return NextResponse.json({ items, source: "itunes" });
     }
 
     if (!isTmdbKind(kind)) {

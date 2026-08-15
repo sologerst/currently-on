@@ -45,10 +45,11 @@ Optional: mark CI + Security as required status checks on `main` in GitHub branc
 | Area | Where |
 | --- | --- |
 | Types | `src/lib/types.ts` |
-| Seed catalog (non-live kinds + TMDb fallback) | `src/lib/catalog.ts` |
+| Seed catalog (fallback when live providers fail) | `src/lib/catalog.ts` |
 | TMDb provider (server) | `src/lib/providers/tmdb.ts` |
 | Open Library provider (server) | `src/lib/providers/open-library.ts` |
 | MusicBrainz provider (server) | `src/lib/providers/musicbrainz.ts` |
+| iTunes podcasts provider (server) | `src/lib/providers/itunes-podcasts.ts` |
 | Catalog API | `src/app/api/catalog/route.ts` |
 | Catalog client helpers | `src/lib/catalog-client.ts` |
 | Category colors / tabs | `src/lib/categories.ts` |
@@ -74,11 +75,11 @@ Confirm Site URL + redirect URLs + Vercel env, then smoke-test magic link / OTP 
 - **TV / Movies (TMDb):** shipped via `src/lib/providers/tmdb.ts` + `/api/catalog`. Server-only env: `TMDB_READ_ACCESS_TOKEN` (preferred) and/or `TMDB_API_KEY`.
 - **Books (Open Library):** shipped via `src/lib/providers/open-library.ts` — no API key; cover art on browse/search/Your list (`ol-book-*`).
 - **Music (MusicBrainz):** shipped via `src/lib/providers/musicbrainz.ts` — no API key; albums browse with Cover Art Archive fronts; artist detail pulls a primary album cover. User-Agent + cached requests (≤1 req/sec policy).
+- **Podcasts (iTunes Search / top charts RSS):** shipped via `src/lib/providers/itunes-podcasts.ts` — no API key; top charts browse + search + lookup (`itunes-pod-*`) with artwork.
 - Still todo:
-  - Podcasts: iTunes Search (no key) or Podcast Index
   - Optional later: Watchmode / Streaming Availability for “where to watch”
 
-Keep seed `src/lib/catalog.ts` for non-live kinds. Keys stay off the client.
+Keep seed `src/lib/catalog.ts` as fallback when live providers fail. Keys stay off the client.
 
 ### 3. Friends realtime polish
 

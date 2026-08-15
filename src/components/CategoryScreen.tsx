@@ -23,6 +23,7 @@ function sourceLabel(source: string) {
   if (source === "tmdb") return "TMDb";
   if (source === "open-library") return "Open Library";
   if (source === "musicbrainz") return "MusicBrainz";
+  if (source === "itunes") return "Apple Podcasts";
   return null;
 }
 
@@ -30,7 +31,8 @@ function isLiveCatalogId(id: string) {
   return (
     id.startsWith("tmdb-") ||
     id.startsWith("mb-") ||
-    id.startsWith("ol-")
+    id.startsWith("ol-") ||
+    id.startsWith("itunes-")
   );
 }
 
