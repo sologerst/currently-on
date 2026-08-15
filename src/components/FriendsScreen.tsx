@@ -57,7 +57,12 @@ export function FriendsScreen() {
   useEffect(() => {
     let cancelled = false;
     const missing = Object.values(state.tracked).filter((t) => {
-      if (t.kind !== "tv" && t.kind !== "movies" && t.kind !== "books")
+      if (
+        t.kind !== "tv" &&
+        t.kind !== "movies" &&
+        t.kind !== "books" &&
+        t.kind !== "music"
+      )
         return false;
       if (getItem(t.kind, t.itemId)) return false;
       if (t.itemName) return false;
