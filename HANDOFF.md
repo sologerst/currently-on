@@ -72,7 +72,7 @@ Confirm Site URL + redirect URLs + Vercel env, then smoke-test magic link / OTP 
 ### 2. Live catalogs
 
 - **TV / Movies (TMDb):** shipped via `src/lib/providers/tmdb.ts` + `/api/catalog`. Server-only env: `TMDB_READ_ACCESS_TOKEN` (preferred) and/or `TMDB_API_KEY`.
-- **Books (Open Library):** shipped via `src/lib/providers/open-library.ts` — no API key required.
+- **Books (Open Library):** shipped via `src/lib/providers/open-library.ts` — no API key; cover art on browse/search/Your list (`ol-book-*`).
 - **Music (MusicBrainz):** shipped via `src/lib/providers/musicbrainz.ts` — no API key; albums browse with Cover Art Archive fronts; artist detail pulls a primary album cover. User-Agent + cached requests (≤1 req/sec policy).
 - Still todo:
   - Podcasts: iTunes Search (no key) or Podcast Index
