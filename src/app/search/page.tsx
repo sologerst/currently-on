@@ -16,26 +16,26 @@ function Results() {
   const groups = ["music", "tv", "movies", "podcasts", "books"] as const;
 
   useEffect(() => {
+    const query = q.trim();
+    if (!query) return;
     let cancelled = false;
-    if (!q.trim()) {
-      setHits([]);
-      return;
-    }
-    setLoading(true);
-    void fetchCatalogSearch(q)
-      .then((items) => {
+    void (async () => {
+      setLoading(true);
+      try {
+        const items = await fetchCatalogSearch(query);
         if (!cancelled) setHits(items);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setHits([]);
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, [q]);
+
+  const shown = q.trim() ? hits : [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -43,7 +43,7 @@ function Results() {
       <p className="font-mono text-sm text-black/45">{q || "Type in the bar"}</p>
       {loading && <p className="mt-4 text-sm text-black/45">Searching…</p>}
       {groups.map((kind) => {
-        const list = hits.filter((h) => h.kind === kind);
+        const list = shown.filter((h) => h.kind === kind);
         if (list.length === 0) return null;
         return (
           <section key={kind} className="mt-4">
@@ -73,7 +73,7 @@ function Results() {
           </section>
         );
       })}
-      {q && !loading && hits.length === 0 && (
+      {q.trim() && !loading && shown.length === 0 && (
         <p className="mt-4 text-sm text-black/45">No matches.</p>
       )}
     </div>

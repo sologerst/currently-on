@@ -17,8 +17,13 @@ export function DetailScreen({
   id: string;
 }) {
   const seed = getItem(kind, id);
-  const [item, setItem] = useState<CatalogItem | null>(seed ?? null);
-  const [loading, setLoading] = useState(!seed);
+  const itemKey = `${kind}:${id}`;
+  const [live, setLive] = useState<{
+    key: string;
+    item: CatalogItem | null;
+  } | null>(null);
+  const item = seed ?? (live?.key === itemKey ? live.item : null);
+  const loading = !seed && live?.key !== itemKey;
   const meta = CATEGORY_META[kind];
   const { getTracked, track, setRating, setReview, recommend, state } =
     useTracker();
@@ -26,20 +31,11 @@ export function DetailScreen({
   const [note, setNote] = useState("");
 
   useEffect(() => {
+    if (seed) return;
     let cancelled = false;
-    if (seed) {
-      setItem(seed);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    void fetchCatalogItem(kind, id)
-      .then((row) => {
-        if (!cancelled) setItem(row);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    void fetchCatalogItem(kind, id).then((row) => {
+      if (!cancelled) setLive({ key: `${kind}:${id}`, item: row });
+    });
     return () => {
       cancelled = true;
     };

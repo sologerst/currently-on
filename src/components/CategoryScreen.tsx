@@ -130,10 +130,7 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
       .map((t) => t.itemId);
     const known = new Set(catalog.map((c) => c.id));
     const missing = trackedIds.filter((id) => !known.has(id));
-    if (missing.length === 0) {
-      setTrackedExtras([]);
-      return;
-    }
+    if (missing.length === 0) return;
     void Promise.all(missing.map((id) => fetchCatalogItem(kind, id))).then(
       (rows) => {
         if (cancelled) return;
@@ -147,9 +144,12 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
 
   const byId = useMemo(() => {
     const map = new Map<string, CatalogItem>();
-    for (const item of [...catalog, ...trackedExtras]) map.set(item.id, item);
+    for (const item of catalog) map.set(item.id, item);
+    for (const item of trackedExtras) {
+      if (item.kind === kind && !map.has(item.id)) map.set(item.id, item);
+    }
     return map;
-  }, [catalog, trackedExtras]);
+  }, [catalog, trackedExtras, kind]);
 
   const trackedList = useMemo(() => {
     return Object.values(state.tracked)
