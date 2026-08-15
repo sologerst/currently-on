@@ -1,0 +1,44 @@
+name: E2E Smoke (production)
+
+# The Playwright suite hits the LIVE production URL (public, unauthenticated
+# checks only — no account mutations), so it can't validate a PR's unreleased
+# changes. It runs here as a post-deploy health check instead:
+#   • on a schedule (every 6h), and
+#   • on demand via the "Run workflow" button.
+# It is intentionally NOT a PR gate.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+
+concurrency:
+  group: e2e-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Playwright smoke @ prod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Run smoke tests
+        env:
+          CI: "true"
+          # Override here if you ever point the smoke suite at a preview URL.
+          E2E_BASE_URL: https://currently-on.vercel.app
+        run: npx playwright test
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
