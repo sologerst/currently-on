@@ -15,7 +15,7 @@ import {
 } from "@/lib/providers/open-library";
 import {
   browseMusicBrainz,
-  getMusicBrainzArtist,
+  getMusicBrainzItem,
   isMusicBrainzConfigured,
   searchMusicBrainz,
 } from "@/lib/providers/musicbrainz";
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
         if (live) return NextResponse.json({ item: live });
       }
       if (isMusic(kind) && isMusicBrainzConfigured()) {
-        const live = await getMusicBrainzArtist(id);
+        const live = await getMusicBrainzItem(id);
         if (live) return NextResponse.json({ item: live });
       }
       const seed = getItem(kind as CategoryKind, id);
