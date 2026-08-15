@@ -48,6 +48,7 @@ Optional: mark CI + Security as required status checks on `main` in GitHub branc
 | Seed catalog (non-live kinds + TMDb fallback) | `src/lib/catalog.ts` |
 | TMDb provider (server) | `src/lib/providers/tmdb.ts` |
 | Open Library provider (server) | `src/lib/providers/open-library.ts` |
+| MusicBrainz provider (server) | `src/lib/providers/musicbrainz.ts` |
 | Catalog API | `src/app/api/catalog/route.ts` |
 | Catalog client helpers | `src/lib/catalog-client.ts` |
 | Category colors / tabs | `src/lib/categories.ts` |
@@ -72,9 +73,9 @@ Confirm Site URL + redirect URLs + Vercel env, then smoke-test magic link / OTP 
 
 - **TV / Movies (TMDb):** shipped via `src/lib/providers/tmdb.ts` + `/api/catalog`. Server-only env: `TMDB_READ_ACCESS_TOKEN` (preferred) and/or `TMDB_API_KEY`.
 - **Books (Open Library):** shipped via `src/lib/providers/open-library.ts` — no API key required.
+- **Music (MusicBrainz):** shipped via `src/lib/providers/musicbrainz.ts` — no API key; User-Agent + cached requests (≤1 req/sec policy).
 - Still todo:
-  - Podcasts: Podcast Index or Listen Notes
-  - Music: Spotify or MusicBrainz
+  - Podcasts: iTunes Search (no key) or Podcast Index
   - Optional later: Watchmode / Streaming Availability for “where to watch”
 
 Keep seed `src/lib/catalog.ts` for non-live kinds. Keys stay off the client.

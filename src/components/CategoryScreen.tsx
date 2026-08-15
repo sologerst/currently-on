@@ -200,7 +200,9 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
             ? " · TMDb"
             : source === "open-library"
               ? " · Open Library"
-              : ""}
+              : source === "musicbrainz"
+                ? " · MusicBrainz"
+                : ""}
         </p>
         <h1 className="font-display text-3xl">{meta.label}</h1>
       </div>

@@ -14,6 +14,12 @@ import {
   searchOpenLibrary,
 } from "@/lib/providers/open-library";
 import {
+  browseMusicBrainz,
+  getMusicBrainzArtist,
+  isMusicBrainzConfigured,
+  searchMusicBrainz,
+} from "@/lib/providers/musicbrainz";
+import {
   getByKind,
   getItem,
   searchCatalog,
@@ -21,7 +27,7 @@ import {
 } from "@/lib/catalog";
 import type { CatalogItem, CategoryKind } from "@/lib/types";
 
-const LIVE_KINDS: CategoryKind[] = ["tv", "movies", "books"];
+const LIVE_KINDS: CategoryKind[] = ["tv", "movies", "books", "music"];
 
 function isTmdbKind(kind: string): kind is "tv" | "movies" {
   return kind === "tv" || kind === "movies";
@@ -29,6 +35,14 @@ function isTmdbKind(kind: string): kind is "tv" | "movies" {
 
 function isBooks(kind: string): kind is "books" {
   return kind === "books";
+}
+
+function isMusic(kind: string): kind is "music" {
+  return kind === "music";
+}
+
+function isLiveKind(kind: string): kind is "tv" | "movies" | "books" | "music" {
+  return isTmdbKind(kind) || isBooks(kind) || isMusic(kind);
 }
 
 export async function GET(request: Request) {
@@ -54,6 +68,10 @@ export async function GET(request: Request) {
         const live = await getOpenLibraryItem(id);
         if (live) return NextResponse.json({ item: live });
       }
+      if (isMusic(kind) && isMusicBrainzConfigured()) {
+        const live = await getMusicBrainzArtist(id);
+        if (live) return NextResponse.json({ item: live });
+      }
       const seed = getItem(kind as CategoryKind, id);
       return NextResponse.json({ item: seed ?? null });
     }
@@ -67,6 +85,8 @@ export async function GET(request: Request) {
           liveHits.push(...(await searchTmdb(kind, q)));
         } else if (isBooks(kind) && isOpenLibraryConfigured()) {
           liveHits.push(...(await searchOpenLibrary(q)));
+        } else if (isMusic(kind) && isMusicBrainzConfigured()) {
+          liveHits.push(...(await searchMusicBrainz(q)));
         } else if (!kind) {
           if (isTmdbConfigured()) {
             liveHits.push(...(await searchTmdbMulti(q)));
@@ -74,20 +94,22 @@ export async function GET(request: Request) {
           if (isOpenLibraryConfigured()) {
             liveHits.push(...(await searchOpenLibrary(q)));
           }
+          if (isMusicBrainzConfigured()) {
+            liveHits.push(...(await searchMusicBrainz(q)));
+          }
         }
       } else if (isTmdbKind(kind) && isTmdbConfigured()) {
         liveHits.push(...(await browseTmdb(kind)));
       } else if (isBooks(kind) && isOpenLibraryConfigured()) {
         liveHits.push(...(await browseOpenLibrary()));
-      } else if (isTmdbKind(kind) || isBooks(kind)) {
+      } else if (isMusic(kind) && isMusicBrainzConfigured()) {
+        liveHits.push(...(await browseMusicBrainz()));
+      } else if (isLiveKind(kind)) {
         liveHits.push(...getByKind(kind));
       }
 
       const seedOther = seedHits.filter((h) => !LIVE_KINDS.includes(h.kind));
-      const merged =
-        kind && (isTmdbKind(kind) || isBooks(kind))
-          ? liveHits
-          : [...liveHits, ...seedOther];
+      const merged = kind && isLiveKind(kind) ? liveHits : [...liveHits, ...seedOther];
       return NextResponse.json({ items: merged });
     }
 
@@ -103,17 +125,19 @@ export async function GET(request: Request) {
 
     // browse
     if (isBooks(kind)) {
-      if (!isOpenLibraryConfigured()) {
-        return NextResponse.json({
-          items: getByKind("books"),
-          source: "seed",
-        });
-      }
       const qTrim = q.trim();
       const items = qTrim
         ? await searchOpenLibrary(qTrim)
         : await browseOpenLibrary();
       return NextResponse.json({ items, source: "open-library" });
+    }
+
+    if (isMusic(kind)) {
+      const qTrim = q.trim();
+      const items = qTrim
+        ? await searchMusicBrainz(qTrim)
+        : await browseMusicBrainz();
+      return NextResponse.json({ items, source: "musicbrainz" });
     }
 
     if (!isTmdbKind(kind)) {
@@ -135,7 +159,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ items, source: "tmdb" });
   } catch (err) {
     console.error(err);
-    if (isTmdbKind(kind) || isBooks(kind)) {
+    if (isLiveKind(kind)) {
       return NextResponse.json({
         items: getByKind(kind as CategoryKind),
         source: "seed-fallback",
