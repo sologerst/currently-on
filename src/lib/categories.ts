@@ -12,39 +12,39 @@ export const CATEGORY_META: Record<
 > = {
   music: {
     label: "Music",
-    hex: "#2FAE66",
+    hex: "#1AAA6E",
     onDark: true,
     href: "/music",
     icon: "♪",
   },
-  tv: { label: "TV", hex: "#E5473F", onDark: false, href: "/tv", icon: "▣" },
+  tv: { label: "TV", hex: "#E23B45", onDark: false, href: "/tv", icon: "▣" },
   movies: {
     label: "Movies",
-    hex: "#3E7BFA",
+    hex: "#2F6BFF",
     onDark: false,
     href: "/movies",
     icon: "▶",
   },
   podcasts: {
     label: "Podcasts",
-    hex: "#8B5FBF",
+    hex: "#0D9488",
     onDark: false,
     href: "/podcasts",
     icon: "◉",
   },
   books: {
     label: "Books",
-    hex: "#E0872D",
+    hex: "#D97706",
     onDark: true,
     href: "/books",
     icon: "▤",
   },
   friends: {
     label: "Friends",
-    hex: "#F2B705",
+    hex: "#EAB308",
     onDark: true,
     href: "/friends",
-    icon: "☺",
+    icon: "◎",
   },
 };
 

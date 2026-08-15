@@ -110,7 +110,7 @@ export function FriendsScreen() {
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-8 text-sm text-black/45">
+      <div className="mx-auto max-w-lg px-4 py-8 text-sm text-muted">
         Loading…
       </div>
     );
@@ -119,12 +119,12 @@ export function FriendsScreen() {
   if (!signedIn) {
     return (
       <div className="mx-auto max-w-lg px-4 py-8">
-        <h1 className="font-display text-3xl">Friends</h1>
-        <p className="mt-2 text-sm text-black/55">
+        <h1 className="font-display text-[2.4rem] leading-none">Friends</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           Sign in to join the shared recommendation feed. Catalog browsing still
           works as a guest.
         </p>
-        <div className="mt-4">
+        <div className="mt-5">
           <AuthSignIn errorMessage={searchParams.get("error")} />
         </div>
       </div>
@@ -134,24 +134,24 @@ export function FriendsScreen() {
   if (!state.displayName) {
     return (
       <div className="mx-auto max-w-lg px-4 py-8">
-        <h1 className="font-display text-3xl">Friends</h1>
-        <p className="mt-2 text-sm text-black/55">
+        <h1 className="font-display text-[2.4rem] leading-none">Friends</h1>
+        <p className="mt-3 text-sm text-muted">
           Choose a display name tied to {userEmail ?? "your account"}.
         </p>
-        <form onSubmit={onName} className="mt-4 flex gap-2">
+        <form onSubmit={onName} className="mt-5 flex gap-2">
           <input
-            className="flex-1 rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2"
+            className="field flex-1 !rounded-2xl"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
           />
-          <button className="rounded-xl bg-[#F2B705] px-4 py-2 text-sm text-[#14161A]">
+          <button className="btn-primary bg-[var(--friends)] text-foreground">
             Continue
           </button>
         </form>
         <button
           type="button"
-          className="mt-4 text-xs text-black/45 underline"
+          className="mt-4 text-xs text-muted underline"
           onClick={() => void signOut()}
         >
           Sign out
@@ -161,29 +161,38 @@ export function FriendsScreen() {
   }
 
   return (
-    <div>
-      <div className="bg-[#F2B705] px-4 py-4 text-[#14161A]">
+    <div className="pb-4">
+      <div
+        className="px-4 py-5 text-foreground"
+        style={{
+          background:
+            "linear-gradient(160deg, var(--friends) 0%, color-mix(in srgb, var(--friends) 70%, #111) 100%)",
+        }}
+      >
         <div className="mx-auto flex max-w-lg items-start justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl">Friends</h1>
-            <p className="text-sm">Posting as {state.displayName}</p>
+            <h1 className="font-display text-[2.4rem] leading-none">Friends</h1>
+            <p className="mt-1 text-sm opacity-80">
+              Posting as {state.displayName}
+            </p>
           </div>
           <button
             type="button"
-            className="shrink-0 text-xs underline"
+            className="shrink-0 text-xs font-medium underline opacity-80"
             onClick={() => void signOut()}
           >
             Sign out
           </button>
         </div>
       </div>
-      <div className="mx-auto max-w-lg space-y-4 px-3 py-4">
+
+      <div className="mx-auto max-w-lg space-y-5 px-4 pt-4">
         <form
           onSubmit={onRec}
-          className="space-y-2 rounded-2xl border border-black/8 bg-[#F6F7F9] p-3"
+          className="space-y-3 rounded-[1.35rem] bg-surface p-4"
         >
-          <p className="font-display">Recommend something</p>
-          <div className="flex gap-2 overflow-x-auto">
+          <p className="font-display text-lg">Recommend something</p>
+          <div className="scroll-x">
             {MEDIA_KINDS.map((k) => (
               <button
                 key={k}
@@ -192,15 +201,24 @@ export function FriendsScreen() {
                   setKind(k);
                   setItemId("");
                 }}
-                className="rounded-full px-3 py-1 text-xs text-white"
-                style={{ background: CATEGORY_META[k].hex }}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  kind === k ? "text-white" : "bg-[var(--surface-2)] text-muted"
+                }`}
+                style={
+                  kind === k
+                    ? {
+                        background: CATEGORY_META[k].hex,
+                        color: CATEGORY_META[k].onDark ? "#12141A" : "#fff",
+                      }
+                    : undefined
+                }
               >
                 {CATEGORY_META[k].label}
               </button>
             ))}
           </div>
           <select
-            className="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+            className="w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] px-3 py-2.5 text-sm"
             value={itemId}
             onChange={(e) => setItemId(e.target.value)}
           >
@@ -216,23 +234,27 @@ export function FriendsScreen() {
             ))}
           </select>
           <textarea
-            className="min-h-16 w-full rounded-xl border border-black/10 bg-white p-2 text-sm"
+            className="min-h-20 w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] p-3 text-sm outline-none"
             placeholder="A short note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          <button className="rounded-full bg-[#F2B705] px-4 py-2 text-sm">
+          <button className="btn-primary bg-[var(--friends)] text-foreground">
             Share
           </button>
         </form>
 
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="scroll-x">
           {friends.map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              className={`rounded-full px-3 py-1 text-xs ${filter === f ? "bg-[#F2B705]" : "bg-[#F6F7F9]"}`}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold ${
+                filter === f
+                  ? "bg-foreground text-white"
+                  : "bg-[var(--surface-2)] text-muted"
+              }`}
             >
               {f === "all" ? "Everyone" : f}
             </button>
@@ -246,32 +268,36 @@ export function FriendsScreen() {
               state.tracked[`${r.itemKind}:${r.itemId}`],
             );
             return (
-              <li
-                key={r.id}
-                className="rounded-2xl border border-black/8 bg-white p-3"
-              >
+              <li key={r.id} className="rounded-[1.35rem] bg-surface p-4">
                 <div className="flex items-center gap-2">
                   <span
-                    className="rounded-full px-2 py-0.5 text-[10px] text-white"
-                    style={{ background: hex }}
+                    className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white"
+                    style={{
+                      background: hex,
+                      color: CATEGORY_META[r.itemKind].onDark
+                        ? "#12141A"
+                        : "#fff",
+                    }}
                   >
                     {CATEGORY_META[r.itemKind].label}
                   </span>
-                  <span className="text-xs text-black/45">{r.author}</span>
+                  <span className="text-xs text-muted">{r.author}</span>
                 </div>
                 <Link
                   href={`/${r.itemKind}/${r.itemId}`}
-                  className="font-display text-lg"
+                  className="mt-1 block font-display text-xl leading-tight"
                 >
                   {r.itemName}
                 </Link>
-                <p className="text-sm">{r.note}</p>
-                <div className="mt-2 flex flex-wrap gap-1">
+                <p className="mt-1 text-sm leading-relaxed text-foreground/80">
+                  {r.note}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {reactions.map((e) => (
                     <button
                       key={e}
                       type="button"
-                      className="rounded-full bg-[#F6F7F9] px-2 py-1 text-xs"
+                      className="pressable rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-xs"
                       onClick={() => react(r.id, e)}
                     >
                       {e} {(r.reactions[e] || []).length || ""}
@@ -281,7 +307,7 @@ export function FriendsScreen() {
                 {!already && (
                   <button
                     type="button"
-                    className="mt-2 text-xs underline"
+                    className="mt-3 text-xs font-medium underline"
                     onClick={() =>
                       addFromFriend(
                         r.itemKind,
@@ -294,15 +320,18 @@ export function FriendsScreen() {
                     Add to my list
                   </button>
                 )}
-                <ul className="mt-2 space-y-1">
+                <ul className="mt-3 space-y-1.5">
                   {r.comments.map((c, i) => (
-                    <li key={i} className="text-xs text-black/70">
-                      <span className="font-display">{c.author}</span> {c.text}
+                    <li key={i} className="text-xs text-muted">
+                      <span className="font-display text-foreground">
+                        {c.author}
+                      </span>{" "}
+                      {c.text}
                     </li>
                   ))}
                 </ul>
                 <form
-                  className="mt-2 flex gap-2"
+                  className="mt-3 flex gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const t = thread[r.id]?.trim();
@@ -312,14 +341,14 @@ export function FriendsScreen() {
                   }}
                 >
                   <input
-                    className="flex-1 rounded-xl border border-black/10 px-2 py-1 text-xs"
+                    className="field flex-1 !rounded-xl !py-2 text-xs"
                     placeholder="Comment"
                     value={thread[r.id] ?? ""}
                     onChange={(e) =>
                       setThread((s) => ({ ...s, [r.id]: e.target.value }))
                     }
                   />
-                  <button className="text-xs">Send</button>
+                  <button className="text-xs font-semibold">Send</button>
                 </form>
               </li>
             );

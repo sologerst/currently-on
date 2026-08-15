@@ -46,11 +46,12 @@ export function CalendarScreen() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl">Calendar</h1>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-[2.4rem] leading-none">Calendar</h1>
+        <div className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1">
           <button
             type="button"
+            className="pressable grid h-8 w-8 place-items-center rounded-full"
             onClick={() =>
               setCursor(
                 new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1),
@@ -59,11 +60,12 @@ export function CalendarScreen() {
           >
             ‹
           </button>
-          <span className="font-mono text-sm">
+          <span className="min-w-24 text-center font-mono text-xs">
             {cursor.toLocaleString("en", { month: "short", year: "numeric" })}
           </span>
           <button
             type="button"
+            className="pressable grid h-8 w-8 place-items-center rounded-full"
             onClick={() =>
               setCursor(
                 new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1),
@@ -74,48 +76,71 @@ export function CalendarScreen() {
           </button>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-7 gap-1 text-center font-mono text-[10px] text-black/40">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div key={i}>{d}</div>
-        ))}
-        {cells.map((day, i) => {
-          if (!day) return <div key={`e-${i}`} />;
-          const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const dots = byDay[iso] || [];
-          return (
-            <button
-              key={iso}
-              type="button"
-              onClick={() => setSelected(iso)}
-              className={`min-h-12 rounded-xl border text-sm ${selected === iso ? "border-black/30" : "border-transparent"}`}
-            >
-              {day}
-              <div className="mt-1 flex justify-center gap-0.5">
-                {dots.slice(0, 4).map((it) => (
-                  <span
-                    key={it.id}
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: CATEGORY_META[it.kind].hex }}
-                  />
-                ))}
-              </div>
-            </button>
-          );
-        })}
+
+      <div className="mt-5 rounded-[1.35rem] bg-surface p-3">
+        <div className="grid grid-cols-7 gap-1 text-center font-mono text-[10px] text-muted">
+          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+            <div key={i} className="py-1">
+              {d}
+            </div>
+          ))}
+          {cells.map((day, i) => {
+            if (!day) return <div key={`e-${i}`} />;
+            const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const dots = byDay[iso] || [];
+            const active = selected === iso;
+            return (
+              <button
+                key={iso}
+                type="button"
+                onClick={() => setSelected(iso)}
+                className={`pressable min-h-12 rounded-2xl text-sm ${
+                  active
+                    ? "bg-foreground text-white"
+                    : "hover:bg-[var(--surface-2)]"
+                }`}
+              >
+                {day}
+                <div className="mt-1 flex justify-center gap-0.5">
+                  {dots.slice(0, 4).map((it) => (
+                    <span
+                      key={it.id}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{
+                        background: active
+                          ? "#fff"
+                          : CATEGORY_META[it.kind].hex,
+                      }}
+                    />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <section className="mt-4 rounded-2xl border border-black/8 bg-[#F6F7F9] p-3">
-        <p className="font-mono text-[10px] uppercase text-black/40">
+
+      <section className="mt-4 rounded-[1.35rem] bg-surface p-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
           {selectedIso || "Pick a day"}
         </p>
         {dayItems.length === 0 && (
-          <p className="text-sm text-black/45">No releases this day.</p>
+          <p className="mt-2 text-sm text-muted">No releases this day.</p>
         )}
-        {dayItems.map((it) => (
-          <p key={it.id} className="text-sm">
-            <span style={{ color: CATEGORY_META[it.kind].hex }}>●</span>{" "}
-            {it.name} · {it.nextLabel || CATEGORY_META[it.kind].label}
-          </p>
-        ))}
+        <ul className="mt-2 space-y-2">
+          {dayItems.map((it) => (
+            <li key={it.id} className="flex items-center gap-2 text-sm">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: CATEGORY_META[it.kind].hex }}
+              />
+              <span className="font-medium">{it.name}</span>
+              <span className="text-muted">
+                · {it.nextLabel || CATEGORY_META[it.kind].label}
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

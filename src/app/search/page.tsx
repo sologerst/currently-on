@@ -39,33 +39,35 @@ function Results() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <h1 className="font-display text-2xl">Search</h1>
-      <p className="font-mono text-sm text-black/45">{q || "Type in the bar"}</p>
-      {loading && <p className="mt-4 text-sm text-black/45">Searching…</p>}
+      <h1 className="font-display text-[2.4rem] leading-none">Search</h1>
+      <p className="mt-2 font-mono text-sm text-muted">
+        {q || "Type in the bar above"}
+      </p>
+      {loading && <p className="mt-4 text-sm text-muted">Searching…</p>}
       {groups.map((kind) => {
         const list = shown.filter((h) => h.kind === kind);
         if (list.length === 0) return null;
         return (
-          <section key={kind} className="mt-4">
+          <section key={kind} className="mt-6">
             <h2
-              className="font-display"
+              className="font-display text-lg"
               style={{ color: CATEGORY_META[kind].hex }}
             >
               {CATEGORY_META[kind].label}
             </h2>
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-2 divide-y divide-[var(--hairline)]">
               {list.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={`/${item.kind}/${item.id}`}
-                    className="flex items-center gap-3 rounded-2xl border border-black/8 p-2"
+                    className="pressable flex items-center gap-3 py-3"
                   >
                     <Poster
                       name={item.name}
                       kind={item.kind}
                       imageUrl={item.imageUrl}
                     />
-                    <span>{item.name}</span>
+                    <span className="font-medium">{item.name}</span>
                   </Link>
                 </li>
               ))}
@@ -74,7 +76,7 @@ function Results() {
         );
       })}
       {q.trim() && !loading && shown.length === 0 && (
-        <p className="mt-4 text-sm text-black/45">No matches.</p>
+        <p className="mt-4 text-sm text-muted">No matches.</p>
       )}
     </div>
   );

@@ -1,21 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Baloo_2, IBM_Plex_Mono, Inter } from "next/font/google";
+import { Figtree, JetBrains_Mono, Syne } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
-const display = Baloo_2({
-  variable: "--font-baloo",
+const display = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
   weight: ["600", "700", "800"],
 });
 
-const sans = Inter({
-  variable: "--font-inter",
+const body = Figtree({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const mono = IBM_Plex_Mono({
-  variable: "--font-plex",
+const mono = JetBrains_Mono({
+  variable: "--font-code",
   subsets: ["latin"],
   weight: ["400", "500"],
 });
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: "#EEF1F4",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -49,9 +50,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-[#14161A]">
+      <body className="flex min-h-full flex-col text-foreground">
         <AppShell>{children}</AppShell>
       </body>
     </html>

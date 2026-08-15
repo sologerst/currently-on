@@ -18,7 +18,7 @@ export function AuthSignIn({
 
   if (!isSupabaseConfigured()) {
     return (
-      <p className="rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2 text-sm text-black/55">
+      <p className="rounded-[1.25rem] bg-[var(--surface-2)] px-3 py-2 text-sm text-muted">
         Supabase env vars are missing. Add{" "}
         <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
         <code className="font-mono text-xs">
@@ -86,7 +86,7 @@ export function AuthSignIn({
           type="email"
           required
           autoComplete="email"
-          className="flex-1 rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2"
+          className="field flex-1 !rounded-2xl"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
@@ -94,7 +94,7 @@ export function AuthSignIn({
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-[#F2B705] px-4 py-2 text-sm text-[#14161A] disabled:opacity-60"
+          className="btn-primary bg-[var(--friends)] text-foreground disabled:opacity-60"
         >
           {busy && !sent ? "Sending…" : "Email me a link"}
         </button>
@@ -105,7 +105,7 @@ export function AuthSignIn({
           <input
             inputMode="numeric"
             autoComplete="one-time-code"
-            className="flex-1 rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2 font-mono tracking-widest"
+            className="field flex-1 !rounded-2xl font-mono tracking-widest"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
             placeholder="6-digit code"
@@ -113,14 +113,14 @@ export function AuthSignIn({
           <button
             type="submit"
             disabled={busy}
-            className="rounded-xl border border-black/15 bg-white px-4 py-2 text-sm disabled:opacity-60"
+            className="btn-ghost disabled:opacity-60"
           >
             Verify code
           </button>
         </form>
       )}
 
-      {message && <p className="text-sm text-black/55">{message}</p>}
+      {message && <p className="text-sm text-muted">{message}</p>}
     </div>
   );
 }

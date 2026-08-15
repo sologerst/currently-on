@@ -19,48 +19,64 @@ function daysLabel(iso?: string) {
   return `${d} days`;
 }
 
-function ItemCard({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
+function sourceLabel(source: string) {
+  if (source === "tmdb") return "TMDb";
+  if (source === "open-library") return "Open Library";
+  if (source === "musicbrainz") return "MusicBrainz";
+  return null;
+}
+
+function ItemRow({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
   const meta = CATEGORY_META[kind];
   const { getTracked, setStatus, track } = useTracker();
   const rec = getTracked(kind, item.id);
   const iso = upcomingIso(item) === "9999-12-31" ? undefined : upcomingIso(item);
+  const metaBits = [
+    item.seasonCount ? `${item.seasonCount} seasons` : null,
+    item.runningStatus,
+    item.rating ? String(item.rating) : null,
+    item.platform,
+    item.genre,
+    ...(item.genres?.slice(0, 2) ?? []),
+    item.notYetStreaming ? "not yet streaming" : null,
+    rec?.recommendedBy ? `via ${rec.recommendedBy}` : null,
+  ].filter(Boolean) as string[];
 
   return (
-    <article className="flex gap-3 rounded-2xl border border-black/8 bg-[#F6F7F9] p-3">
-      <Link href={`/${kind}/${item.id}`}>
+    <article className="flex gap-3 py-3">
+      <Link href={`/${kind}/${item.id}`} className="pressable shrink-0">
         <Poster name={item.name} kind={kind} imageUrl={item.imageUrl} />
       </Link>
       <div className="min-w-0 flex-1">
-        <Link href={`/${kind}/${item.id}`} className="font-display text-base">
+        <Link
+          href={`/${kind}/${item.id}`}
+          className="block truncate font-display text-[1.05rem] leading-tight"
+        >
           {item.name}
         </Link>
         {item.author && (
-          <p className="text-xs text-black/50">{item.author}</p>
+          <p className="mt-0.5 truncate text-xs text-muted">{item.author}</p>
         )}
-        <div className="mt-1 flex flex-wrap gap-1">
-          {item.seasonCount ? <Badge>{item.seasonCount} seasons</Badge> : null}
-          {item.runningStatus ? <Badge>{item.runningStatus}</Badge> : null}
-          {item.rating ? <Badge>{item.rating}</Badge> : null}
-          {item.platform ? <Badge>{item.platform}</Badge> : null}
-          {item.genre ? <Badge>{item.genre}</Badge> : null}
-          {item.genres?.slice(0, 3).map((g) => (
-            <Badge key={g}>{g}</Badge>
-          ))}
-          {item.notYetStreaming ? <Badge>not yet streaming</Badge> : null}
-          {rec?.recommendedBy ? (
-            <Badge>Recommended by {rec.recommendedBy}</Badge>
-          ) : null}
-        </div>
+        {metaBits.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {metaBits.slice(0, 4).map((bit) => (
+              <Badge key={bit}>{bit}</Badge>
+            ))}
+          </div>
+        )}
         {iso && (
-          <p className="mt-1 font-mono text-[11px]" style={{ color: meta.hex }}>
+          <p
+            className="mt-1.5 font-mono text-[11px] font-medium"
+            style={{ color: meta.hex }}
+          >
             {item.nextLabel || "Release"} · {daysLabel(iso)}
           </p>
         )}
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2.5 flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-full px-3 py-1 text-xs text-white"
-            style={{ background: meta.hex }}
+            className="btn-primary"
+            style={{ background: meta.hex, color: meta.onDark ? "#12141A" : "#fff" }}
             onClick={() => {
               if (!rec) track(kind, item.id, undefined, item.name);
               else
@@ -78,7 +94,7 @@ function ItemCard({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
             href={lookItUpUrl(item.name)}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full border border-black/10 px-3 py-1 text-xs"
+            className="btn-ghost"
           >
             Look it up
           </a>
@@ -122,7 +138,6 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
     };
   }, [kind, q]);
 
-  // Resolve tracked titles that aren't in the current browse/search page.
   useEffect(() => {
     let cancelled = false;
     const trackedIds = Object.values(state.tracked)
@@ -176,7 +191,7 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
   );
 
   const searchHits = catalog;
-  const suggested = catalog.slice(0, 6);
+  const suggested = catalog.slice(0, 8);
   const friendRecs = state.recommendations.filter(
     (r) => r.itemKind === kind && !getTracked(kind, r.itemId),
   );
@@ -191,145 +206,167 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
     .filter((i) => upcomingIso(i) !== "9999-12-31")
     .sort((a, b) => upcomingIso(a).localeCompare(upcomingIso(b)))[0];
 
+  const live = sourceLabel(source);
+
   return (
-    <div>
-      <div className="px-4 py-4 text-white" style={{ background: meta.hex }}>
-        <p className="font-mono text-[10px] uppercase tracking-widest opacity-80">
-          Currently On
-          {source === "tmdb"
-            ? " · TMDb"
-            : source === "open-library"
-              ? " · Open Library"
-              : source === "musicbrainz"
-                ? " · MusicBrainz"
-                : ""}
+    <div className="pb-4">
+      <div
+        className="px-4 pb-5 pt-4 text-white"
+        style={{
+          background: `linear-gradient(165deg, ${meta.hex} 0%, color-mix(in srgb, ${meta.hex} 70%, #0b1020) 100%)`,
+          color: meta.onDark ? "#12141A" : "#fff",
+        }}
+      >
+        <p
+          className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-70"
+          style={{ color: "inherit" }}
+        >
+          Currently On{live ? ` · ${live}` : ""}
         </p>
-        <h1 className="font-display text-3xl">{meta.label}</h1>
+        <h1 className="mt-1 font-display text-[2.4rem] leading-none">
+          {meta.label}
+        </h1>
       </div>
-      <div className="mx-auto max-w-lg space-y-4 px-3 py-4">
+
+      <div className="mx-auto max-w-lg space-y-5 px-4 pt-4">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={`Search ${meta.label.toLowerCase()}`}
-          className="w-full rounded-xl border border-black/10 bg-[#F6F7F9] px-3 py-2 text-sm"
+          className="field"
+          enterKeyHint="search"
         />
+
         {loading && (
-          <p className="text-sm text-black/45">Loading catalog…</p>
+          <p className="animate-fade text-sm text-muted">Loading catalog…</p>
         )}
+
         {q.trim() && !loading && (
-          <div className="space-y-2">
+          <section className="divide-y divide-[var(--hairline)]">
             {searchHits.length === 0 && (
-              <p className="text-sm text-black/45">No matches.</p>
+              <p className="py-4 text-sm text-muted">No matches.</p>
             )}
             {searchHits.map((item) => (
-              <ItemCard key={item.id} item={item} kind={kind} />
+              <ItemRow key={item.id} item={item} kind={kind} />
             ))}
-          </div>
-        )}
-
-        <div className="flex gap-2 overflow-x-auto">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className="shrink-0 rounded-full px-3 py-1.5 text-xs"
-              style={
-                tab === t.id
-                  ? {
-                      background: meta.hex,
-                      color: meta.onDark ? "#14161A" : "#fff",
-                    }
-                  : { background: "#F6F7F9", color: "#14161A" }
-              }
-            >
-              {t.label} {counts[t.id] ?? 0}
-            </button>
-          ))}
-        </div>
-
-        <section>
-          <h2 className="mb-2 font-display">Suggested</h2>
-          <div className="flex gap-2 overflow-x-auto">
-            {suggested.map((item) => (
-              <Link
-                key={item.id}
-                href={`/${kind}/${item.id}`}
-                className="w-24 shrink-0"
-              >
-                <Poster
-                  name={item.name}
-                  kind={kind}
-                  imageUrl={item.imageUrl}
-                />
-                <p className="mt-1 truncate text-xs">{item.name}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {friendRecs.length > 0 && (
-          <section>
-            <h2 className="mb-2 font-display">Recommended by friends</h2>
-            <div className="mb-2 flex gap-2 overflow-x-auto">
-              <button
-                type="button"
-                className="rounded-full border px-3 py-1 text-xs"
-                onClick={() => setFriendFilter("all")}
-              >
-                All
-              </button>
-              {friendNames.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className="rounded-full border px-3 py-1 text-xs"
-                  onClick={() => setFriendFilter(n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div className="space-y-2">
-              {shownFriendRecs.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/${kind}/${r.itemId}`}
-                  className="block rounded-xl border border-black/8 bg-[#F6F7F9] px-3 py-2 text-sm"
-                >
-                  <span className="font-display">{r.itemName}</span>
-                  <span className="text-black/45"> · {r.author}</span>
-                </Link>
-              ))}
-            </div>
           </section>
         )}
 
-        {comingUp && (
-          <section
-            className="rounded-2xl p-4 text-white"
-            style={{ background: meta.hex }}
-          >
-            <p className="font-mono text-[10px] uppercase tracking-widest opacity-80">
-              Coming up next
-            </p>
-            <p className="font-display text-xl">{comingUp.name}</p>
-            <p className="font-mono text-sm">
-              {comingUp.nextLabel || comingUp.releaseDate} ·{" "}
-              {daysLabel(upcomingIso(comingUp))}
-            </p>
-          </section>
-        )}
+        {!q.trim() && (
+          <>
+            <section>
+              <h2 className="mb-3 font-display text-lg">Suggested</h2>
+              <div className="scroll-x pb-1">
+                {suggested.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/${kind}/${item.id}`}
+                    className="pressable w-[5.5rem] shrink-0"
+                  >
+                    <Poster
+                      name={item.name}
+                      kind={kind}
+                      imageUrl={item.imageUrl}
+                    />
+                    <p className="mt-1.5 truncate text-xs font-medium">
+                      {item.name}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
 
-        <section className="space-y-2">
-          <h2 className="font-display">Your list</h2>
-          {trackedList.length === 0 && (
-            <p className="text-sm text-black/45">Nothing in this tab yet.</p>
-          )}
-          {trackedList.map((item) => (
-            <ItemCard key={item.id} item={item} kind={kind} />
-          ))}
-        </section>
+            {friendRecs.length > 0 && (
+              <section>
+                <h2 className="mb-3 font-display text-lg">From friends</h2>
+                <div className="scroll-x mb-2">
+                  {["all", ...friendNames].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
+                        friendFilter === n
+                          ? "bg-foreground text-white"
+                          : "bg-[var(--surface-2)] text-muted"
+                      }`}
+                      onClick={() => setFriendFilter(n)}
+                    >
+                      {n === "all" ? "Everyone" : n}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-1">
+                  {shownFriendRecs.map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/${kind}/${r.itemId}`}
+                      className="pressable flex items-baseline justify-between gap-3 py-2.5"
+                    >
+                      <span className="font-display text-base">{r.itemName}</span>
+                      <span className="shrink-0 text-xs text-muted">
+                        {r.author}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {comingUp && (
+              <section
+                className="overflow-hidden rounded-[1.35rem] p-4"
+                style={{
+                  background: `linear-gradient(145deg, ${meta.hex}, color-mix(in srgb, ${meta.hex} 65%, #111))`,
+                  color: meta.onDark ? "#12141A" : "#fff",
+                }}
+              >
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">
+                  Coming up next
+                </p>
+                <p className="mt-1 font-display text-2xl leading-tight">
+                  {comingUp.name}
+                </p>
+                <p className="mt-1 font-mono text-sm opacity-80">
+                  {comingUp.nextLabel || comingUp.releaseDate} ·{" "}
+                  {daysLabel(upcomingIso(comingUp))}
+                </p>
+              </section>
+            )}
+
+            <section>
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <h2 className="font-display text-lg">Your list</h2>
+              </div>
+              <div className="scroll-x mb-2 rounded-full bg-[var(--surface-2)] p-1">
+                {tabs.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
+                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                      tab === t.id
+                        ? "bg-surface text-foreground shadow-sm"
+                        : "text-muted"
+                    }`}
+                  >
+                    {t.label}
+                    <span className="ml-1 opacity-50">{counts[t.id] ?? 0}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="divide-y divide-[var(--hairline)]">
+                {trackedList.length === 0 && (
+                  <p className="py-6 text-sm text-muted">
+                    Nothing in this tab yet.
+                  </p>
+                )}
+                {trackedList.map((item) => (
+                  <ItemRow key={item.id} item={item} kind={kind} />
+                ))}
+              </div>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );
