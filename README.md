@@ -20,7 +20,7 @@ The app runs standalone (`display: standalone`) with its own icon and theme.
 
 ## Stack
 
-Next.js (App Router) + TypeScript + Tailwind. Hosted on Vercel. Content catalogs live in `src/lib/catalog.ts` so TMDb / Google Books / etc. can replace the seed data later.
+Next.js (App Router) + TypeScript + Tailwind. Hosted on Vercel. TV and Movies browse/search via TMDb (`/api/catalog`, server-only keys). Other categories still use seed data in `src/lib/catalog.ts`.
 
 ## Checks (GitHub Actions)
 
@@ -42,6 +42,8 @@ npm run test:e2e  # needs `npx playwright install chromium`
 ## Auth
 
 Friends requires a Supabase account (magic link or email OTP). Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`).
+
+For live TV/Movies, set server-only `TMDB_READ_ACCESS_TOKEN` and/or `TMDB_API_KEY` in `.env.local` and on Vercel (never `NEXT_PUBLIC_`).
 
 ## Demo / guest data
 

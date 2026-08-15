@@ -45,7 +45,10 @@ Optional: mark CI + Security as required status checks on `main` in GitHub branc
 | Area | Where |
 | --- | --- |
 | Types | `src/lib/types.ts` |
-| Seed catalog (swap for APIs) | `src/lib/catalog.ts` |
+| Seed catalog (non-live kinds + TMDb fallback) | `src/lib/catalog.ts` |
+| TMDb provider (server) | `src/lib/providers/tmdb.ts` |
+| Catalog API | `src/app/api/catalog/route.ts` |
+| Catalog client helpers | `src/lib/catalog-client.ts` |
 | Category colors / tabs | `src/lib/categories.ts` |
 | Client store | `src/lib/tracker.tsx` (`currently-on-v1` localStorage for guests; Supabase when signed in) |
 | Supabase remote helpers | `src/lib/tracker-remote.ts` |
@@ -66,15 +69,14 @@ Confirm Site URL + redirect URLs + Vercel env, then smoke-test magic link / OTP 
 
 ### 2. Live catalogs
 
-Keep `getCatalog` / `searchCatalog` / `getItem` as the interface. Wire:
+- **TV / Movies (TMDb):** shipped via `src/lib/providers/tmdb.ts` + `/api/catalog`. Server-only env: `TMDB_READ_ACCESS_TOKEN` (preferred) and/or `TMDB_API_KEY`. Add both to Vercel Production + Preview. Falls back to seed catalog if unset.
+- Still todo:
+  - Books: Google Books or Open Library
+  - Podcasts: Podcast Index or Listen Notes
+  - Music: Spotify or MusicBrainz
+  - Optional later: Watchmode / Streaming Availability for “where to watch”
 
-- TV / Movies: TMDb
-- Books: Google Books or Open Library
-- Podcasts: Podcast Index or Listen Notes
-- Music: Spotify or MusicBrainz
-- Optional later: Watchmode / Streaming Availability for “where to watch”
-
-Cache server-side (Route Handlers or Vercel) so keys stay off the client.
+Keep seed `src/lib/catalog.ts` for non-live kinds. Keys stay off the client.
 
 ### 3. Friends realtime polish
 

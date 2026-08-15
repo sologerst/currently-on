@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AuthSignIn } from "@/components/AuthSignIn";
 import { CATEGORY_META, MEDIA_KINDS } from "@/lib/categories";
-import { getByKind, getItem } from "@/lib/catalog";
+import { getItem } from "@/lib/catalog";
+import { fetchCatalogItem } from "@/lib/catalog-client";
 import { useTracker } from "@/lib/tracker";
-import type { CategoryKind } from "@/lib/types";
+import type { CatalogItem, CategoryKind } from "@/lib/types";
 
 export function FriendsScreen() {
   const searchParams = useSearchParams();
@@ -30,13 +31,53 @@ export function FriendsScreen() {
   const [note, setNote] = useState("");
   const [filter, setFilter] = useState("all");
   const [thread, setThread] = useState<Record<string, string>>({});
+  const [liveById, setLiveById] = useState<Record<string, CatalogItem>>({});
 
   const trackedOfKind = useMemo(() => {
-    return Object.values(state.tracked)
-      .filter((t) => t.kind === kind)
-      .map((t) => getItem(t.kind, t.itemId))
-      .filter(Boolean);
-  }, [state.tracked, kind]);
+    const list: CatalogItem[] = [];
+    for (const t of Object.values(state.tracked)) {
+      if (t.kind !== kind) continue;
+      const seed = getItem(t.kind, t.itemId);
+      if (seed) {
+        list.push(seed);
+        continue;
+      }
+      const live = liveById[`${t.kind}:${t.itemId}`];
+      if (live) {
+        list.push(live);
+        continue;
+      }
+      if (t.itemName) {
+        list.push({ id: t.itemId, kind: t.kind, name: t.itemName });
+      }
+    }
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [state.tracked, kind, liveById]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const missing = Object.values(state.tracked).filter((t) => {
+      if (t.kind !== "tv" && t.kind !== "movies") return false;
+      if (getItem(t.kind, t.itemId)) return false;
+      if (t.itemName) return false;
+      return !liveById[`${t.kind}:${t.itemId}`];
+    });
+    if (missing.length === 0) return;
+    void Promise.all(
+      missing.map(async (t) => {
+        const item = await fetchCatalogItem(t.kind, t.itemId);
+        if (!cancelled && item) {
+          setLiveById((prev) => ({
+            ...prev,
+            [`${t.kind}:${t.itemId}`]: item,
+          }));
+        }
+      }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [state.tracked, liveById]);
 
   const friends = [
     "all",
@@ -55,7 +96,9 @@ export function FriendsScreen() {
   function onRec(e: FormEvent) {
     e.preventDefault();
     if (!itemId || !note.trim()) return;
-    recommend(kind, itemId, note.trim());
+    const picked =
+      trackedOfKind.find((i) => i.id === itemId) || getItem(kind, itemId);
+    recommend(kind, itemId, note.trim(), picked?.name);
     setNote("");
   }
 
@@ -155,15 +198,16 @@ export function FriendsScreen() {
             value={itemId}
             onChange={(e) => setItemId(e.target.value)}
           >
-            <option value="">Pick a tracked title</option>
-            {(trackedOfKind.length ? trackedOfKind : getByKind(kind)).map(
-              (item) =>
-                item ? (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ) : null,
-            )}
+            <option value="">
+              {trackedOfKind.length
+                ? "Pick a tracked title"
+                : "Track something first"}
+            </option>
+            {trackedOfKind.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </select>
           <textarea
             className="min-h-16 w-full rounded-xl border border-black/10 bg-white p-2 text-sm"
@@ -233,7 +277,12 @@ export function FriendsScreen() {
                     type="button"
                     className="mt-2 text-xs underline"
                     onClick={() =>
-                      addFromFriend(r.itemKind, r.itemId, r.author)
+                      addFromFriend(
+                        r.itemKind,
+                        r.itemId,
+                        r.author,
+                        r.itemName,
+                      )
                     }
                   >
                     Add to my list

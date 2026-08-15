@@ -2,23 +2,48 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Poster } from "@/components/MediaBits";
 import { CATEGORY_META } from "@/lib/categories";
-import { searchCatalog } from "@/lib/catalog";
+import { fetchCatalogSearch } from "@/lib/catalog-client";
+import type { CatalogItem } from "@/lib/types";
 
 function Results() {
   const params = useSearchParams();
   const q = params.get("q") ?? "";
-  const hits = searchCatalog(q);
+  const [hits, setHits] = useState<CatalogItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const groups = ["music", "tv", "movies", "podcasts", "books"] as const;
+
+  useEffect(() => {
+    const query = q.trim();
+    if (!query) return;
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      try {
+        const items = await fetchCatalogSearch(query);
+        if (!cancelled) setHits(items);
+      } catch {
+        if (!cancelled) setHits([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [q]);
+
+  const shown = q.trim() ? hits : [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
       <h1 className="font-display text-2xl">Search</h1>
       <p className="font-mono text-sm text-black/45">{q || "Type in the bar"}</p>
+      {loading && <p className="mt-4 text-sm text-black/45">Searching…</p>}
       {groups.map((kind) => {
-        const list = hits.filter((h) => h.kind === kind);
+        const list = shown.filter((h) => h.kind === kind);
         if (list.length === 0) return null;
         return (
           <section key={kind} className="mt-4">
@@ -35,7 +60,11 @@ function Results() {
                     href={`/${item.kind}/${item.id}`}
                     className="flex items-center gap-3 rounded-2xl border border-black/8 p-2"
                   >
-                    <Poster name={item.name} kind={item.kind} />
+                    <Poster
+                      name={item.name}
+                      kind={item.kind}
+                      imageUrl={item.imageUrl}
+                    />
                     <span>{item.name}</span>
                   </Link>
                 </li>
@@ -44,8 +73,8 @@ function Results() {
           </section>
         );
       })}
-      {q && hits.length === 0 && (
-        <p className="mt-4 text-sm text-black/45">No matches in the demo catalog.</p>
+      {q.trim() && !loading && shown.length === 0 && (
+        <p className="mt-4 text-sm text-black/45">No matches.</p>
       )}
     </div>
   );

@@ -7,15 +7,28 @@ export function Poster({
   name,
   kind,
   large,
+  imageUrl,
 }: {
   name: string;
   kind: CategoryKind;
   large?: boolean;
+  imageUrl?: string;
 }) {
   const hex = CATEGORY_META[kind].hex;
+  const size = large ? "h-48 w-36 text-lg" : "h-16 w-12 text-[10px]";
+  if (imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={imageUrl}
+        alt={name}
+        className={`shrink-0 rounded-xl object-cover ${size}`}
+      />
+    );
+  }
   return (
     <div
-      className={`grid shrink-0 place-items-center rounded-xl text-center font-display leading-tight text-white ${large ? "h-48 w-36 text-lg" : "h-16 w-12 text-[10px]"}`}
+      className={`grid shrink-0 place-items-center rounded-xl text-center font-display leading-tight text-white ${size}`}
       style={{ background: hex }}
     >
       <span className="px-1">{name.split(" ").slice(0, 2).join(" ")}</span>
