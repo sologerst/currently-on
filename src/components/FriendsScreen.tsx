@@ -61,7 +61,8 @@ export function FriendsScreen() {
         t.kind !== "tv" &&
         t.kind !== "movies" &&
         t.kind !== "books" &&
-        t.kind !== "music"
+        t.kind !== "music" &&
+        t.kind !== "podcasts"
       )
         return false;
       if (getItem(t.kind, t.itemId)) return false;
@@ -174,6 +175,10 @@ export function FriendsScreen() {
             <h1 className="font-display text-[2.4rem] leading-none">Friends</h1>
             <p className="mt-1 text-sm opacity-80">
               Posting as {state.displayName}
+              <span className="ml-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide opacity-90">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/80" />
+                Live
+              </span>
             </p>
           </div>
           <button
@@ -262,6 +267,16 @@ export function FriendsScreen() {
         </div>
 
         <ul className="space-y-3">
+          {feed.length === 0 && (
+            <li className="rounded-[1.35rem] bg-surface p-5">
+              <p className="font-display text-lg">No recommendations yet</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted">
+                {filter === "all"
+                  ? "Share something from your tracked list — friends will see it here in real time."
+                  : `Nothing from ${filter} yet.`}
+              </p>
+            </li>
+          )}
           {feed.map((r) => {
             const hex = CATEGORY_META[r.itemKind].hex;
             const already = Boolean(

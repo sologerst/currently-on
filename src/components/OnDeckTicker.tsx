@@ -17,6 +17,7 @@ function daysUntil(iso: string) {
 
 export function OnDeckTicker() {
   const [items, setItems] = useState<CatalogItem[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,43 +27,51 @@ export function OnDeckTicker() {
       })
       .catch(() => {
         if (!cancelled) setItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (items.length === 0) return null;
+  if (!ready) return null;
+
   return (
     <div className="border-b border-[var(--hairline)] bg-transparent">
       <div className="scroll-x mx-auto max-w-lg items-center px-3 py-2.5">
         <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
           On deck
         </span>
-        {items.map((item) => {
-          const meta = CATEGORY_META[item.kind];
-          const iso = upcomingIso(item);
-          return (
-            <Link
-              key={`${item.kind}:${item.id}`}
-              href={`/${item.kind}/${item.id}`}
-              className="pressable flex shrink-0 items-center gap-2 rounded-full bg-surface px-2.5 py-1.5"
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ background: meta.hex }}
-              />
-              <span className="max-w-28 truncate text-xs font-medium">
-                {item.name}
-              </span>
-              {iso !== "9999-12-31" && (
-                <span className="font-mono text-[10px] text-muted">
-                  {daysUntil(iso)}
+        {items.length === 0 ? (
+          <span className="text-xs text-muted">Nothing scheduled right now</span>
+        ) : (
+          items.map((item) => {
+            const meta = CATEGORY_META[item.kind];
+            const iso = upcomingIso(item);
+            return (
+              <Link
+                key={`${item.kind}:${item.id}`}
+                href={`/${item.kind}/${item.id}`}
+                className="pressable flex shrink-0 items-center gap-2 rounded-full bg-surface px-2.5 py-1.5"
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: meta.hex }}
+                />
+                <span className="max-w-28 truncate text-xs font-medium">
+                  {item.name}
                 </span>
-              )}
-            </Link>
-          );
-        })}
+                {iso !== "9999-12-31" && (
+                  <span className="font-mono text-[10px] text-muted">
+                    {daysUntil(iso)}
+                  </span>
+                )}
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );

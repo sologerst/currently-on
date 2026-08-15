@@ -31,6 +31,7 @@ import {
   searchCatalog,
   upcomingItems,
 } from "@/lib/catalog";
+import { rankCatalogItems } from "@/lib/search-rank";
 import type { CatalogItem, CategoryKind } from "@/lib/types";
 
 const LIVE_KINDS: CategoryKind[] = [
@@ -141,16 +142,28 @@ export async function GET(request: Request) {
 
       const seedOther = seedHits.filter((h) => !LIVE_KINDS.includes(h.kind));
       const merged = kind && isLiveKind(kind) ? liveHits : [...liveHits, ...seedOther];
-      return NextResponse.json({ items: merged });
+      return NextResponse.json({
+        items: q.trim() ? rankCatalogItems(merged, q) : merged,
+      });
     }
 
     if (action === "upcoming") {
-      const seed = upcomingItems().filter((i) => !LIVE_KINDS.includes(i.kind));
-      const liveTv = isTmdbConfigured()
-        ? await upcomingTmdbTv()
-        : getByKind("tv");
+      // Live TV when TMDb is configured; always fill remaining slots from seed
+      // so On Deck stays useful without every provider having release dates.
+      let liveTv: CatalogItem[] = [];
+      try {
+        liveTv = isTmdbConfigured() ? await upcomingTmdbTv() : [];
+      } catch (err) {
+        console.error(err);
+        liveTv = [];
+      }
+      const seen = new Set(liveTv.map((i) => `${i.kind}:${i.id}`));
+      const seedFiller = upcomingItems().filter(
+        (i) => !seen.has(`${i.kind}:${i.id}`),
+      );
       return NextResponse.json({
-        items: [...liveTv, ...seed].slice(0, 12),
+        items: [...liveTv, ...seedFiller].slice(0, 12),
+        source: liveTv.length ? "mixed" : "seed",
       });
     }
 
@@ -158,7 +171,7 @@ export async function GET(request: Request) {
     if (isBooks(kind)) {
       const qTrim = q.trim();
       const items = qTrim
-        ? await searchOpenLibrary(qTrim)
+        ? rankCatalogItems(await searchOpenLibrary(qTrim), qTrim)
         : await browseOpenLibrary();
       return NextResponse.json({ items, source: "open-library" });
     }
@@ -166,7 +179,7 @@ export async function GET(request: Request) {
     if (isMusic(kind)) {
       const qTrim = q.trim();
       const items = qTrim
-        ? await searchMusicBrainz(qTrim)
+        ? rankCatalogItems(await searchMusicBrainz(qTrim), qTrim)
         : await browseMusicBrainz();
       return NextResponse.json({ items, source: "musicbrainz" });
     }
@@ -174,7 +187,7 @@ export async function GET(request: Request) {
     if (isPodcasts(kind)) {
       const qTrim = q.trim();
       const items = qTrim
-        ? await searchItunesPodcasts(qTrim)
+        ? rankCatalogItems(await searchItunesPodcasts(qTrim), qTrim)
         : await browseItunesPodcasts();
       return NextResponse.json({ items, source: "itunes" });
     }
@@ -192,9 +205,8 @@ export async function GET(request: Request) {
       });
     }
     const qTrim = q.trim();
-    const items = qTrim
-      ? await searchTmdb(kind, qTrim)
-      : await browseTmdb(kind);
+    const raw = qTrim ? await searchTmdb(kind, qTrim) : await browseTmdb(kind);
+    const items = qTrim ? rankCatalogItems(raw, qTrim) : raw;
     return NextResponse.json({ items, source: "tmdb" });
   } catch (err) {
     console.error(err);

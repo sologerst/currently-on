@@ -35,59 +35,91 @@ type RecRow = {
   }> | null;
 };
 
+const RECOMMENDATION_SELECT = `
+  id,
+  item_kind,
+  item_id,
+  item_name,
+  note,
+  created_at,
+  profiles!recommendations_author_id_fkey ( display_name ),
+  recommendation_reactions (
+    emoji,
+    profiles!recommendation_reactions_user_id_fkey ( display_name )
+  ),
+  recommendation_comments (
+    text,
+    created_at,
+    profiles!recommendation_comments_user_id_fkey ( display_name )
+  )
+`;
+
+function mapRecommendationRows(rows: RecRow[]): Recommendation[] {
+  return rows.map((row) => {
+    const reactions: Record<string, string[]> = {};
+    for (const r of row.recommendation_reactions ?? []) {
+      const name = r.profiles?.display_name || "Someone";
+      reactions[r.emoji] = [...(reactions[r.emoji] ?? []), name];
+    }
+    return {
+      id: row.id,
+      author: row.profiles?.display_name || "Someone",
+      itemKind: row.item_kind as CategoryKind,
+      itemId: row.item_id,
+      itemName: row.item_name,
+      note: row.note,
+      timestamp: row.created_at,
+      reactions,
+      comments: (row.recommendation_comments ?? []).map((c) => ({
+        author: c.profiles?.display_name || "Someone",
+        text: c.text,
+        timestamp: c.created_at,
+      })),
+    };
+  });
+}
+
+/** Shared Friends feed query — also used to refresh after Realtime events. */
+export async function loadRecommendations(
+  supabase: Client,
+): Promise<Recommendation[]> {
+  const { data, error } = await supabase
+    .from("recommendations")
+    .select(RECOMMENDATION_SELECT)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return mapRecommendationRows((data ?? []) as unknown as RecRow[]);
+}
+
 export async function loadRemoteState(
   supabase: Client,
   userId: string,
 ): Promise<PersistedState> {
-  const [
-    profileRes,
-    trackedRes,
-    diaryRes,
-    notificationsRes,
-    recommendationsRes,
-  ] = await Promise.all([
-    supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
-    supabase.from("tracked_items").select("*").eq("user_id", userId),
-    supabase
-      .from("diary_entries")
-      .select("*")
-      .eq("user_id", userId)
-      .order("date_finished", { ascending: false }),
-    supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("recommendations")
-      .select(
-        `
-        id,
-        item_kind,
-        item_id,
-        item_name,
-        note,
-        created_at,
-        profiles!recommendations_author_id_fkey ( display_name ),
-        recommendation_reactions (
-          emoji,
-          profiles!recommendation_reactions_user_id_fkey ( display_name )
-        ),
-        recommendation_comments (
-          text,
-          created_at,
-          profiles!recommendation_comments_user_id_fkey ( display_name )
-        )
-      `,
-      )
-      .order("created_at", { ascending: false }),
-  ]);
+  const [profileRes, trackedRes, diaryRes, notificationsRes, recommendations] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .maybeSingle(),
+      supabase.from("tracked_items").select("*").eq("user_id", userId),
+      supabase
+        .from("diary_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date_finished", { ascending: false }),
+      supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
+      loadRecommendations(supabase),
+    ]);
 
   if (profileRes.error) throw profileRes.error;
   if (trackedRes.error) throw trackedRes.error;
   if (diaryRes.error) throw diaryRes.error;
   if (notificationsRes.error) throw notificationsRes.error;
-  if (recommendationsRes.error) throw recommendationsRes.error;
 
   const tracked: Record<string, TrackedRecord> = {};
   for (const row of trackedRes.data ?? []) {
@@ -117,31 +149,6 @@ export async function loadRemoteState(
       timestamp: row.created_at,
     }),
   );
-
-  const recommendations: Recommendation[] = (
-    (recommendationsRes.data ?? []) as unknown as RecRow[]
-  ).map((row) => {
-    const reactions: Record<string, string[]> = {};
-    for (const r of row.recommendation_reactions ?? []) {
-      const name = r.profiles?.display_name || "Someone";
-      reactions[r.emoji] = [...(reactions[r.emoji] ?? []), name];
-    }
-    return {
-      id: row.id,
-      author: row.profiles?.display_name || "Someone",
-      itemKind: row.item_kind as CategoryKind,
-      itemId: row.item_id,
-      itemName: row.item_name,
-      note: row.note,
-      timestamp: row.created_at,
-      reactions,
-      comments: (row.recommendation_comments ?? []).map((c) => ({
-        author: c.profiles?.display_name || "Someone",
-        text: c.text,
-        timestamp: c.created_at,
-      })),
-    };
-  });
 
   return {
     displayName: profileRes.data?.display_name ?? "",

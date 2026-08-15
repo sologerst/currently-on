@@ -18,6 +18,7 @@ import {
   insertComment,
   insertNotification,
   insertRecommendation,
+  loadRecommendations,
   loadRemoteState,
   markNotificationsRead,
   toggleReaction,
@@ -247,6 +248,56 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
     if (!ready || signedIn) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state, ready, signedIn]);
+
+  // Live Friends feed — refresh recommendations when peers post/react/comment.
+  useEffect(() => {
+    if (!signedIn || !isSupabaseConfigured()) return;
+
+    const supabase = createClient();
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void (async () => {
+          try {
+            const recommendations = await loadRecommendations(supabase);
+            if (!cancelled) {
+              setState((s) => ({ ...s, recommendations }));
+            }
+          } catch (err) {
+            console.error("Failed to refresh friends feed", err);
+          }
+        })();
+      }, 250);
+    };
+
+    const channel = supabase
+      .channel("friends-feed")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "recommendations" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "recommendation_reactions" },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "recommendation_comments" },
+        scheduleRefresh,
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [signedIn]);
 
   const patch = useCallback((fn: (s: PersistedState) => PersistedState) => {
     setState((s) => fn(s));

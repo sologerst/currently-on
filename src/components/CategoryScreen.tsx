@@ -24,6 +24,8 @@ function sourceLabel(source: string) {
   if (source === "open-library") return "Open Library";
   if (source === "musicbrainz") return "MusicBrainz";
   if (source === "itunes") return "Apple Podcasts";
+  if (source === "seed-fallback") return "Demo catalog";
+  if (source === "seed") return "Demo catalog";
   return null;
 }
 
@@ -302,7 +304,13 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
         {q.trim() && !loading && (
           <section className="divide-y divide-[var(--hairline)]">
             {searchHits.length === 0 && (
-              <p className="py-4 text-sm text-muted">No matches.</p>
+              <div className="py-6">
+                <p className="font-display text-lg">No matches</p>
+                <p className="mt-1 text-sm text-muted">
+                  Try another spelling, or clear search to browse suggested
+                  titles.
+                </p>
+              </div>
             )}
             {searchHits.map((item) => (
               <ItemRow key={item.id} item={item} kind={kind} />
@@ -314,24 +322,31 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
           <>
             <section>
               <h2 className="mb-3 font-display text-lg">Suggested</h2>
-              <div className="scroll-x pb-1">
-                {suggested.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/${kind}/${item.id}`}
-                    className="pressable w-[5.5rem] shrink-0"
-                  >
-                    <Poster
-                      name={item.name}
-                      kind={kind}
-                      imageUrl={item.imageUrl}
-                    />
-                    <p className="mt-1.5 truncate text-xs font-medium">
-                      {item.name}
-                    </p>
-                  </Link>
-                ))}
-              </div>
+              {loading ? null : suggested.length === 0 ? (
+                <p className="py-4 text-sm text-muted">
+                  Catalog is quiet right now — try searching, or check back
+                  shortly.
+                </p>
+              ) : (
+                <div className="scroll-x pb-1">
+                  {suggested.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/${kind}/${item.id}`}
+                      className="pressable w-[5.5rem] shrink-0"
+                    >
+                      <Poster
+                        name={item.name}
+                        kind={kind}
+                        imageUrl={item.imageUrl}
+                      />
+                      <p className="mt-1.5 truncate text-xs font-medium">
+                        {item.name}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </section>
 
             {friendRecs.length > 0 && (
@@ -414,9 +429,13 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
               </div>
               <div className="divide-y divide-[var(--hairline)]">
                 {trackedList.length === 0 && (
-                  <p className="py-6 text-sm text-muted">
-                    Nothing in this tab yet.
-                  </p>
+                  <div className="py-6">
+                    <p className="font-display text-base">Nothing here yet</p>
+                    <p className="mt-1 text-sm text-muted">
+                      Track a title from Suggested, or add one a friend
+                      recommended.
+                    </p>
+                  </div>
                 )}
                 {trackedList.map((item) => (
                   <ItemRow key={item.id} item={item} kind={kind} />
