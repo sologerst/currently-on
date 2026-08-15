@@ -26,6 +26,14 @@ function sourceLabel(source: string) {
   return null;
 }
 
+function isLiveCatalogId(id: string) {
+  return (
+    id.startsWith("tmdb-") ||
+    id.startsWith("mb-") ||
+    id.startsWith("ol-")
+  );
+}
+
 function ItemRow({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
   const meta = CATEGORY_META[kind];
   const { getTracked, setStatus, track } = useTracker();
@@ -43,7 +51,7 @@ function ItemRow({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
   ].filter(Boolean) as string[];
 
   return (
-    <article className="flex gap-3 py-3">
+    <article className="flex items-center gap-3 py-3">
       <Link href={`/${kind}/${item.id}`} className="pressable shrink-0">
         <Poster name={item.name} kind={kind} imageUrl={item.imageUrl} />
       </Link>
@@ -76,15 +84,20 @@ function ItemRow({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
           <button
             type="button"
             className="btn-primary"
-            style={{ background: meta.hex, color: meta.onDark ? "#12141A" : "#fff" }}
+            style={{
+              background: meta.hex,
+              color: meta.onDark ? "#12141A" : "#fff",
+            }}
             onClick={() => {
-              if (!rec) track(kind, item.id, undefined, item.name);
+              if (!rec)
+                track(kind, item.id, undefined, item.name, item.imageUrl);
               else
                 setStatus(
                   kind,
                   item.id,
                   cycleStatus(kind, rec.myStatus) as MyStatus,
                   item.name,
+                  item.imageUrl,
                 );
             }}
           >
@@ -140,16 +153,30 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
 
   useEffect(() => {
     let cancelled = false;
-    const trackedIds = Object.values(state.tracked)
+    const inCatalog = new Map(catalog.map((c) => [c.id, c]));
+    const missing = Object.values(state.tracked)
       .filter((t) => t.kind === kind)
+      .filter((t) => {
+        if (!isLiveCatalogId(t.itemId)) return false;
+        if (t.imageUrl) return false;
+        const hit = inCatalog.get(t.itemId);
+        if (hit?.imageUrl) return false;
+        // Need a full item (or poster) from the live catalog API.
+        return !hit || !hit.imageUrl;
+      })
       .map((t) => t.itemId);
-    const known = new Set(catalog.map((c) => c.id));
-    const missing = trackedIds.filter((id) => !known.has(id));
+
     if (missing.length === 0) return;
     void Promise.all(missing.map((id) => fetchCatalogItem(kind, id))).then(
       (rows) => {
         if (cancelled) return;
-        setTrackedExtras(rows.filter(Boolean) as CatalogItem[]);
+        const next = rows.filter(Boolean) as CatalogItem[];
+        if (next.length === 0) return;
+        setTrackedExtras((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          for (const row of next) map.set(row.id, row);
+          return [...map.values()];
+        });
       },
     );
     return () => {
@@ -161,7 +188,18 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
     const map = new Map<string, CatalogItem>();
     for (const item of catalog) map.set(item.id, item);
     for (const item of trackedExtras) {
-      if (item.kind === kind && !map.has(item.id)) map.set(item.id, item);
+      if (item.kind !== kind) continue;
+      const prev = map.get(item.id);
+      map.set(
+        item.id,
+        prev
+          ? {
+              ...prev,
+              ...item,
+              imageUrl: item.imageUrl || prev.imageUrl,
+            }
+          : item,
+      );
     }
     return map;
   }, [catalog, trackedExtras, kind]);
@@ -174,7 +212,25 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
           return t.myStatus === "recommended" || Boolean(t.recommendedBy);
         return t.myStatus === tab;
       })
-      .map((t) => byId.get(t.itemId))
+      .map((t) => {
+        const hit = byId.get(t.itemId);
+        if (hit) {
+          return {
+            ...hit,
+            name: hit.name || t.itemName || hit.name,
+            imageUrl: hit.imageUrl || t.imageUrl,
+          };
+        }
+        if (t.itemName || t.imageUrl) {
+          return {
+            id: t.itemId,
+            kind: t.kind,
+            name: t.itemName || t.itemId,
+            imageUrl: t.imageUrl,
+          } satisfies CatalogItem;
+        }
+        return null;
+      })
       .filter(Boolean) as CatalogItem[];
   }, [state.tracked, kind, tab, byId]);
 

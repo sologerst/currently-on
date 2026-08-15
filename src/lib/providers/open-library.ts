@@ -1,7 +1,8 @@
 import type { CatalogItem } from "@/lib/types";
 
 const OL_BASE = "https://openlibrary.org";
-const COVER_BASE = "https://covers.openlibrary.org/b/id";
+const COVER_ID_BASE = "https://covers.openlibrary.org/b/id";
+const COVER_OLID_BASE = "https://covers.openlibrary.org/b/olid";
 const UA = "CurrentlyOn/1.0 (https://github.com/sologerst/currently-on)";
 
 export function isOpenLibraryConfigured() {
@@ -25,6 +26,7 @@ type OlDoc = {
   title?: string;
   author_name?: string[];
   cover_i?: number;
+  cover_edition_key?: string;
   first_publish_year?: number;
   subject?: string[];
   ratings_average?: number;
@@ -51,9 +53,10 @@ async function olFetch<T>(path: string, params: Record<string, string> = {}) {
   return (await res.json()) as T;
 }
 
-function coverUrl(coverId?: number) {
-  if (!coverId) return undefined;
-  return `${COVER_BASE}/${coverId}-M.jpg`;
+export function coverUrl(coverId?: number, editionKey?: string) {
+  if (coverId) return `${COVER_ID_BASE}/${coverId}-L.jpg`;
+  if (editionKey) return `${COVER_OLID_BASE}/${editionKey}-L.jpg`;
+  return undefined;
 }
 
 function mapDoc(doc: OlDoc): CatalogItem | null {
@@ -77,19 +80,18 @@ function mapDoc(doc: OlDoc): CatalogItem | null {
     releaseDate: doc.first_publish_year
       ? String(doc.first_publish_year)
       : undefined,
-    imageUrl: coverUrl(doc.cover_i),
+    imageUrl: coverUrl(doc.cover_i, doc.cover_edition_key),
   };
 }
 
 export async function browseOpenLibrary(): Promise<CatalogItem[]> {
   const data = await olFetch<{ works?: OlDoc[] }>("/trending/daily.json");
-  const out: CatalogItem[] = [];
-  for (const doc of data.works ?? []) {
-    const item = mapDoc(doc);
-    if (item) out.push(item);
-    if (out.length >= 20) break;
-  }
-  return out;
+  const mapped = (data.works ?? [])
+    .map(mapDoc)
+    .filter(Boolean) as CatalogItem[];
+  // Prefer rows that already have cover art for list/search parity.
+  mapped.sort((a, b) => Number(Boolean(b.imageUrl)) - Number(Boolean(a.imageUrl)));
+  return mapped.slice(0, 20);
 }
 
 export async function searchOpenLibrary(query: string): Promise<CatalogItem[]> {
@@ -99,7 +101,7 @@ export async function searchOpenLibrary(query: string): Promise<CatalogItem[]> {
     q,
     limit: "20",
     fields:
-      "key,title,author_name,cover_i,first_publish_year,subject,ratings_average",
+      "key,title,author_name,cover_i,cover_edition_key,first_publish_year,subject,ratings_average",
   });
   const out: CatalogItem[] = [];
   for (const doc of data.docs ?? []) {
