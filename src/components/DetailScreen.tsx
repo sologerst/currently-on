@@ -41,49 +41,75 @@ export function DetailScreen({
     };
   }, [kind, id, seed]);
 
-  if (loading) return <p className="p-4 text-sm text-black/45">Loading…</p>;
-  if (!item) return <p className="p-4">Not found.</p>;
+  if (loading) {
+    return <p className="p-6 text-sm text-muted">Loading…</p>;
+  }
+  if (!item) {
+    return <p className="p-6 text-sm text-muted">Not found.</p>;
+  }
 
   return (
-    <div>
-      <div className="px-4 py-5 text-white" style={{ background: meta.hex }}>
-        <Link href={`/${kind}`} className="text-sm opacity-80">
+    <div className="pb-6">
+      <div
+        className="px-4 pb-8 pt-4"
+        style={{
+          background: `linear-gradient(165deg, ${meta.hex} 0%, color-mix(in srgb, ${meta.hex} 68%, #0b1020) 100%)`,
+          color: meta.onDark ? "#12141A" : "#fff",
+        }}
+      >
+        <Link
+          href={`/${kind}`}
+          className="text-sm font-medium opacity-75"
+          style={{ color: "inherit" }}
+        >
           ← {meta.label}
         </Link>
-        <h1 className="mt-2 font-display text-3xl">{item.name}</h1>
-      </div>
-      <div className="mx-auto max-w-lg space-y-4 px-3 py-4">
-        <div className="flex gap-4">
+        <div className="mt-5 flex gap-4">
           <Poster
             name={item.name}
             kind={kind}
             large
             imageUrl={item.imageUrl}
           />
-          <div className="space-y-2">
-            {item.author && <p className="text-sm">{item.author}</p>}
-            <div className="flex flex-wrap gap-1">
-              {item.seasonCount ? <Badge>{item.seasonCount} seasons</Badge> : null}
-              {item.runningStatus ? <Badge>{item.runningStatus}</Badge> : null}
-              {item.rating ? <Badge>Community {item.rating}</Badge> : null}
-              {item.platform ? <Badge>{item.platform}</Badge> : null}
-              {item.genre ? <Badge>{item.genre}</Badge> : null}
-              {item.genres?.map((g) => (
-                <Badge key={g}>{g}</Badge>
-              ))}
-            </div>
+          <div className="min-w-0 flex-1 self-end pb-1">
+            <h1 className="font-display text-[1.85rem] leading-[1.05]">
+              {item.name}
+            </h1>
+            {item.author && (
+              <p className="mt-1 text-sm opacity-80">{item.author}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto -mt-4 max-w-lg space-y-4 px-4">
+        <div className="rounded-[1.35rem] bg-surface p-4 shadow-[0_12px_32px_rgba(18,20,26,0.06)]">
+          <div className="flex flex-wrap gap-1.5">
+            {item.seasonCount ? <Badge>{item.seasonCount} seasons</Badge> : null}
+            {item.runningStatus ? <Badge>{item.runningStatus}</Badge> : null}
+            {item.rating ? <Badge>Community {item.rating}</Badge> : null}
+            {item.platform ? <Badge>{item.platform}</Badge> : null}
+            {item.genre ? <Badge>{item.genre}</Badge> : null}
+            {item.genres?.slice(0, 5).map((g) => (
+              <Badge key={g}>{g}</Badge>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
             {!rec && (
               <button
                 type="button"
-                className="rounded-full px-3 py-1 text-sm text-white"
-                style={{ background: meta.hex }}
+                className="btn-primary"
+                style={{
+                  background: meta.hex,
+                  color: meta.onDark ? "#12141A" : "#fff",
+                }}
                 onClick={() => track(kind, id, undefined, item.name)}
               >
                 Add to my list
               </button>
             )}
             <a
-              className="block text-sm underline"
+              className="btn-ghost"
               href={lookItUpUrl(item.name)}
               target="_blank"
               rel="noreferrer"
@@ -93,8 +119,10 @@ export function DetailScreen({
           </div>
         </div>
 
-        <section className="rounded-2xl border border-black/8 bg-[#F6F7F9] p-3">
-          <p className="mb-1 text-xs text-black/45">Your rating</p>
+        <section className="rounded-[1.35rem] bg-surface p-4">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
+            Your rating
+          </p>
           <StarRating
             value={rec?.myRating ?? 0}
             onChange={(n) => {
@@ -102,9 +130,11 @@ export function DetailScreen({
               setRating(kind, id, n);
             }}
           />
-          <p className="mb-1 mt-3 text-xs text-black/45">Notes</p>
+          <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted">
+            Notes
+          </p>
           <textarea
-            className="min-h-24 w-full rounded-xl border border-black/10 bg-white p-2 text-sm"
+            className="min-h-28 w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] p-3 text-sm outline-none focus:border-foreground/25"
             value={rec?.myReview ?? ""}
             onChange={(e) => {
               if (!rec) track(kind, id, undefined, item.name);
@@ -114,18 +144,21 @@ export function DetailScreen({
         </section>
 
         {state.displayName && rec && (
-          <section className="rounded-2xl border border-black/8 p-3">
-            <p className="font-display">Recommend to friends</p>
+          <section className="rounded-[1.35rem] bg-surface p-4">
+            <p className="font-display text-lg">Recommend to friends</p>
             <textarea
-              className="mt-2 min-h-16 w-full rounded-xl border border-black/10 bg-[#F6F7F9] p-2 text-sm"
+              className="mt-3 min-h-20 w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] p-3 text-sm outline-none focus:border-foreground/25"
               placeholder="A short note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
             <button
               type="button"
-              className="mt-2 rounded-full px-3 py-1 text-sm text-white"
-              style={{ background: meta.hex }}
+              className="btn-primary mt-3"
+              style={{
+                background: meta.hex,
+                color: meta.onDark ? "#12141A" : "#fff",
+              }}
               onClick={() => {
                 recommend(kind, id, note, item.name);
                 setNote("");
@@ -136,9 +169,9 @@ export function DetailScreen({
           </section>
         )}
         {!state.displayName && (
-          <p className="text-sm text-black/45">
-            Sign in on <Link href="/friends">Friends</Link> and set a display
-            name to recommend titles.
+          <p className="px-1 text-sm text-muted">
+            Sign in on <Link href="/friends" className="underline">Friends</Link>{" "}
+            and set a display name to recommend titles.
           </p>
         )}
       </div>

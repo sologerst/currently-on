@@ -59,7 +59,7 @@ Optional: mark CI + Security as required status checks on `main` in GitHub branc
 | Shell / PWA | `src/components/AppShell.tsx`, `InstallBanner.tsx`, `public/sw.js`, `public/manifest.webmanifest` |
 | Screens | `src/components/*Screen.tsx` + `src/app/**/page.tsx` |
 
-Design: light theme, Baloo 2 / Inter / IBM Plex Mono. Colors: Music `#2FAE66`, TV `#E5473F`, Movies `#3E7BFA`, Podcasts `#8B5FBF`, Books `#E0872D`, Friends `#F2B705`.
+Design: light cool paper (`#EEF1F4`), Syne / Figtree / JetBrains Mono. Native shell with glass top bar + bottom tabs. Category accents: Music `#1AAA6E`, TV `#E23B45`, Movies `#2F6BFF`, Podcasts `#0D9488`, Books `#D97706`, Friends `#EAB308`.
 
 Do **not** show IMDb / Rotten Tomatoes marks. Keep generic “Look it up” web search.
 

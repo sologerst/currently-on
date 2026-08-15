@@ -47,19 +47,19 @@ export function InstallBanner() {
 
   return (
     <div className="mx-auto max-w-lg px-3 pt-3">
-      <div className="flex items-start gap-3 rounded-2xl border border-black/10 bg-[#F6F7F9] p-3">
+      <div className="flex items-start gap-3 rounded-[1.25rem] bg-surface p-3.5">
         <div className="min-w-0 flex-1">
           <p className="font-display text-sm">Install Currently On</p>
-          <p className="text-xs text-black/50">
+          <p className="mt-0.5 text-xs leading-relaxed text-muted">
             {ios
               ? "In Safari, tap Share, then Add to Home Screen."
-              : "Add this app to your phone for a full-screen, app-like experience."}
+              : "Add this app to your phone for a full-screen experience."}
           </p>
         </div>
         {deferred && (
           <button
             type="button"
-            className="shrink-0 rounded-xl bg-[#14161A] px-3 py-2 text-xs text-white"
+            className="btn-primary shrink-0 bg-foreground"
             onClick={async () => {
               await deferred.prompt();
               setDeferred(null);
@@ -70,10 +70,10 @@ export function InstallBanner() {
         )}
         <button
           type="button"
-          className="text-xs text-black/40"
+          className="shrink-0 text-xs text-muted"
           onClick={() => setDismissed(true)}
         >
-          Not now
+          Later
         </button>
       </div>
     </div>

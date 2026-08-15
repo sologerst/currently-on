@@ -22,40 +22,43 @@ export function DiaryScreen() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <h1 className="font-display text-3xl">Diary</h1>
-      <section className="mt-4 rounded-2xl border border-black/8 bg-[#F6F7F9] p-4">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-black/40">
+      <h1 className="font-display text-[2.4rem] leading-none">Diary</h1>
+      <section className="mt-5 rounded-[1.35rem] bg-surface p-5">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
           Your year so far
         </p>
-        <p className="font-display text-xl">{year}</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <p className="mt-1 font-display text-3xl">{year}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
           {Object.entries(byKind).map(([k, n]) => (
-            <span key={k} className="text-sm">
+            <span
+              key={k}
+              className="rounded-full bg-[var(--surface-2)] px-3 py-1 text-sm font-medium"
+            >
               {CATEGORY_META[k as keyof typeof CATEGORY_META].label}: {n}
             </span>
           ))}
           {ytd.length === 0 && (
-            <span className="text-sm text-black/45">
+            <span className="text-sm text-muted">
               Finish something to start the log.
             </span>
           )}
         </div>
-        <p className="mt-2 font-mono text-sm">
+        <p className="mt-3 font-mono text-sm text-muted">
           Avg rating {avg ? avg.toFixed(1) : "—"}
         </p>
       </section>
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 divide-y divide-[var(--hairline)]">
         {state.diary.map((d) => (
           <li key={`${d.kind}-${d.itemId}-${d.dateFinished}`}>
             <Link
               href={`/${d.kind}/${d.itemId}`}
-              className="block rounded-2xl border border-black/8 p-3"
+              className="pressable block py-3.5"
             >
-              <p className="font-mono text-[10px] text-black/40">
+              <p className="font-mono text-[10px] uppercase tracking-wide text-muted">
                 {new Date(d.dateFinished).toLocaleDateString()}
               </p>
-              <p className="font-display">{d.name}</p>
-              <p className="text-xs text-black/50">
+              <p className="font-display text-lg leading-tight">{d.name}</p>
+              <p className="mt-0.5 text-xs text-muted">
                 {CATEGORY_META[d.kind].label}
                 {d.personalRating ? ` · ${d.personalRating}★` : ""}
               </p>
