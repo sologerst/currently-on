@@ -17,7 +17,11 @@ function Results() {
 
   useEffect(() => {
     const query = q.trim();
-    if (!query) return;
+    if (!query) {
+      setHits([]);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       setLoading(true);
@@ -43,6 +47,12 @@ function Results() {
       <p className="mt-2 font-mono text-sm text-muted">
         {q || "Type in the bar above"}
       </p>
+      {!q.trim() && (
+        <p className="mt-8 text-sm leading-relaxed text-muted">
+          Search across music, TV, movies, podcasts, and books. Results are
+          ranked by how closely titles and creators match.
+        </p>
+      )}
       {loading && <p className="mt-4 text-sm text-muted">Searching…</p>}
       {groups.map((kind) => {
         const list = shown.filter((h) => h.kind === kind);
@@ -67,7 +77,16 @@ function Results() {
                       kind={item.kind}
                       imageUrl={item.imageUrl}
                     />
-                    <span className="font-medium">{item.name}</span>
+                    <div className="min-w-0">
+                      <span className="block truncate font-medium">
+                        {item.name}
+                      </span>
+                      {item.author && (
+                        <span className="block truncate text-xs text-muted">
+                          {item.author}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 </li>
               ))}
@@ -76,7 +95,13 @@ function Results() {
         );
       })}
       {q.trim() && !loading && shown.length === 0 && (
-        <p className="mt-4 text-sm text-muted">No matches.</p>
+        <div className="mt-8 space-y-2">
+          <p className="font-display text-lg">No matches for “{q.trim()}”</p>
+          <p className="text-sm leading-relaxed text-muted">
+            Try a shorter title, an artist or author name, or browse a category
+            from Home.
+          </p>
+        </div>
       )}
     </div>
   );

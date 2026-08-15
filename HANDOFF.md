@@ -83,11 +83,13 @@ Keep seed `src/lib/catalog.ts` as fallback when live providers fail. Keys stay o
 
 ### 3. Friends realtime polish
 
-Shared feed already hits Postgres. Add Supabase Realtime subscriptions for new recommendations / reactions / comments.
+Shipped: Supabase Realtime on `recommendations`, `recommendation_reactions`, and `recommendation_comments` (migration `20260815193000_friends_feed_realtime`). Signed-in clients subscribe in `TrackerProvider` and refresh the shared feed.
 
 ### 4. Push (after data is server-side)
 
 In-app bell already exists. Add Web Push (and later APNs/FCM if native). Scheduled job: upcoming releases vs each user’s tracked list.
+
+UX notes (no new keys): search ranking via `src/lib/search-rank.ts`; On Deck fills from seed when live upcoming is thin; empty states on Search / Friends / category lists.
 
 ## Out of scope until asked
 
