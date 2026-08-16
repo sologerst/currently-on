@@ -38,9 +38,15 @@ export function Poster({
   imageUrl?: string;
 }) {
   const [broken, setBroken] = useState(false);
+  // Album / podcast art is square; posters for film & TV stay portrait.
+  const square = kind === "music" || kind === "podcasts";
   const size = large
-    ? "h-52 w-40 text-lg shadow-[0_18px_40px_rgba(18,20,26,0.18)]"
-    : "h-[4.5rem] w-[3.35rem] text-[10px]";
+    ? square
+      ? "h-44 w-44 text-lg shadow-[0_18px_40px_rgba(18,20,26,0.18)]"
+      : "h-52 w-40 text-lg shadow-[0_18px_40px_rgba(18,20,26,0.18)]"
+    : square
+      ? "h-[4.5rem] w-[4.5rem] text-[10px]"
+      : "h-[4.5rem] w-[3.35rem] text-[10px]";
 
   if (imageUrl && !broken) {
     return (
