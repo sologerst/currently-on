@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Badge, Poster } from "@/components/MediaBits";
+import { Badge, CoverCard, PlatformMark } from "@/components/MediaBits";
+import { SectionRule } from "@/components/SectionRule";
 import { CATEGORY_META, cycleStatus, lookItUpUrl, tabsFor } from "@/lib/categories";
 import { upcomingIso } from "@/lib/catalog";
 import { fetchCatalogBrowse, fetchCatalogItem } from "@/lib/catalog-client";
@@ -53,34 +54,40 @@ function ItemRow({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
     item.notYetStreaming ? "not yet streaming" : null,
     rec?.recommendedBy ? `via ${rec.recommendedBy}` : null,
   ].filter(Boolean) as string[];
+  const cover = kind === "music" || kind === "podcasts" ? "album" : "wide";
 
   return (
     <article className="flex items-center gap-3 py-3">
       <Link href={`/${kind}/${item.id}`} className="pressable shrink-0">
-        <Poster name={item.name} kind={kind} imageUrl={item.imageUrl} />
+        <CoverCard
+          name={item.name}
+          kind={kind}
+          imageUrl={item.imageUrl}
+          rating={item.rating}
+          variant={cover}
+        />
       </Link>
       <div className="min-w-0 flex-1">
         <Link
           href={`/${kind}/${item.id}`}
-          className="block truncate font-display text-[1.05rem] leading-tight"
+          className="block truncate font-display text-[1.05rem] font-medium leading-tight tracking-wide"
         >
           {item.name}
         </Link>
         {item.author && (
-          <p className="mt-0.5 truncate text-xs text-muted">{item.author}</p>
+          <p className="mt-0.5 truncate font-display text-xs font-light text-muted">
+            {item.author}
+          </p>
         )}
         {metaBits.length > 0 && (
           <div className="mt-1.5 flex flex-wrap gap-1">
-            {metaBits.slice(0, 4).map((bit) => (
+            {metaBits.slice(0, 3).map((bit) => (
               <Badge key={bit}>{bit}</Badge>
             ))}
           </div>
         )}
         {iso && (
-          <p
-            className="mt-1.5 font-mono text-[11px] font-medium"
-            style={{ color: meta.hex }}
-          >
+          <p className="mt-1.5 font-display text-[11px] font-light uppercase tracking-[0.14em] text-[var(--gold)]">
             {item.nextLabel || "Release"} · {daysLabel(iso)}
           </p>
         )}
@@ -111,7 +118,7 @@ function ItemRow({ item, kind }: { item: CatalogItem; kind: CategoryKind }) {
             href={lookItUpUrl(item.name)}
             target="_blank"
             rel="noreferrer"
-            className="btn-ghost"
+            className="btn-ghost !px-3 !py-1.5 !text-[10px]"
           >
             Look it up
           </a>
@@ -131,6 +138,7 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
   const [trackedExtras, setTrackedExtras] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<string>("");
+  const cover = kind === "music" || kind === "podcasts" ? "album" : "wide";
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +173,6 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
         if (t.imageUrl) return false;
         const hit = inCatalog.get(t.itemId);
         if (hit?.imageUrl) return false;
-        // Need a full item (or poster) from the live catalog API.
         return !hit || !hit.imageUrl;
       })
       .map((t) => t.itemId);
@@ -269,182 +276,178 @@ export function CategoryScreen({ kind }: { kind: CategoryKind }) {
   const live = sourceLabel(source);
 
   return (
-    <div className="pb-4">
-      <div
-        className="px-4 pb-5 pt-4 text-white"
-        style={{
-          background: `linear-gradient(165deg, ${meta.hex} 0%, color-mix(in srgb, ${meta.hex} 70%, #0b1020) 100%)`,
-          color: meta.onDark ? "#12141A" : "#fff",
-        }}
-      >
-        <p
-          className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-70"
-          style={{ color: "inherit" }}
-        >
-          Currently On{live ? ` · ${live}` : ""}
-        </p>
-        <h1 className="mt-1 font-display text-[2.4rem] leading-none">
-          {meta.label}
-        </h1>
-      </div>
+    <div className="mx-auto max-w-lg px-4 pb-6 pt-3">
+      <p className="font-display text-[10px] font-light uppercase tracking-[0.22em] text-white/50">
+        Always On{live ? ` · ${live}` : ""}
+      </p>
+      <h1 className="mt-1 font-display text-[2.4rem] font-semibold italic leading-none tracking-wide">
+        {meta.tab}
+      </h1>
 
-      <div className="mx-auto max-w-lg space-y-5 px-4 pt-4">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={`Search ${meta.label.toLowerCase()}`}
-          className="field"
-          enterKeyHint="search"
-        />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={`Search ${meta.label.toLowerCase()}`}
+        className="field mt-5"
+        enterKeyHint="search"
+      />
 
-        {loading && (
-          <p className="animate-fade text-sm text-muted">Loading catalog…</p>
-        )}
+      {loading && (
+        <p className="animate-fade mt-4 text-sm text-muted">Loading catalog…</p>
+      )}
 
-        {q.trim() && !loading && (
-          <section className="divide-y divide-[var(--hairline)]">
-            {searchHits.length === 0 && (
-              <div className="py-6">
-                <p className="font-display text-lg">No matches</p>
-                <p className="mt-1 text-sm text-muted">
-                  Try another spelling, or clear search to browse suggested
-                  titles.
-                </p>
-              </div>
-            )}
-            {searchHits.map((item) => (
-              <ItemRow key={item.id} item={item} kind={kind} />
-            ))}
-          </section>
-        )}
+      {q.trim() && !loading && (
+        <section className="mt-4 divide-y divide-white/10">
+          {searchHits.length === 0 && (
+            <div className="py-6">
+              <p className="font-display text-lg">No matches</p>
+              <p className="mt-1 text-sm text-muted">
+                Try another spelling, or clear search to browse suggested
+                titles.
+              </p>
+            </div>
+          )}
+          {searchHits.map((item) => (
+            <ItemRow key={item.id} item={item} kind={kind} />
+          ))}
+        </section>
+      )}
 
-        {!q.trim() && (
-          <>
-            <section>
-              <h2 className="mb-3 font-display text-lg">Suggested</h2>
-              {loading ? null : suggested.length === 0 ? (
-                <p className="py-4 text-sm text-muted">
-                  Catalog is quiet right now — try searching, or check back
-                  shortly.
-                </p>
-              ) : (
-                <div className="scroll-x pb-1">
-                  {suggested.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={`/${kind}/${item.id}`}
-                      className="pressable w-[5.5rem] shrink-0"
-                    >
-                      <Poster
-                        name={item.name}
-                        kind={kind}
-                        imageUrl={item.imageUrl}
-                      />
-                      <p className="mt-1.5 truncate text-xs font-medium">
+      {!q.trim() && (
+        <div className="mt-6 space-y-6">
+          <section>
+            <SectionRule>Suggested</SectionRule>
+            {loading ? null : suggested.length === 0 ? (
+              <p className="py-4 text-sm text-muted">
+                Catalog is quiet right now — try searching, or check back
+                shortly.
+              </p>
+            ) : (
+              <div className="scroll-x mt-4 pb-1">
+                {suggested.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/${kind}/${item.id}`}
+                    className="pressable w-[11.2rem] shrink-0"
+                  >
+                    <CoverCard
+                      name={item.name}
+                      kind={kind}
+                      imageUrl={item.imageUrl}
+                      rating={item.rating}
+                      variant={cover}
+                    />
+                    <div className="mt-2 flex items-start justify-between gap-2">
+                      <p className="truncate font-display text-xs font-medium tracking-wide">
                         {item.name}
                       </p>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {friendRecs.length > 0 && (
-              <section>
-                <h2 className="mb-3 font-display text-lg">From friends</h2>
-                <div className="scroll-x mb-2">
-                  {["all", ...friendNames].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
-                        friendFilter === n
-                          ? "bg-foreground text-white"
-                          : "bg-[var(--surface-2)] text-muted"
-                      }`}
-                      onClick={() => setFriendFilter(n)}
-                    >
-                      {n === "all" ? "Everyone" : n}
-                    </button>
-                  ))}
-                </div>
-                <div className="space-y-1">
-                  {shownFriendRecs.map((r) => (
-                    <Link
-                      key={r.id}
-                      href={`/${kind}/${r.itemId}`}
-                      className="pressable flex items-baseline justify-between gap-3 py-2.5"
-                    >
-                      <span className="font-display text-base">{r.itemName}</span>
-                      <span className="shrink-0 text-xs text-muted">
-                        {r.author}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {comingUp && (
-              <section
-                className="overflow-hidden rounded-[1.35rem] p-4"
-                style={{
-                  background: `linear-gradient(145deg, ${meta.hex}, color-mix(in srgb, ${meta.hex} 65%, #111))`,
-                  color: meta.onDark ? "#12141A" : "#fff",
-                }}
-              >
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">
-                  Coming up next
-                </p>
-                <p className="mt-1 font-display text-2xl leading-tight">
-                  {comingUp.name}
-                </p>
-                <p className="mt-1 font-mono text-sm opacity-80">
-                  {comingUp.nextLabel || comingUp.releaseDate} ·{" "}
-                  {daysLabel(upcomingIso(comingUp))}
-                </p>
-              </section>
-            )}
-
-            <section>
-              <div className="mb-3 flex items-end justify-between gap-3">
-                <h2 className="font-display text-lg">Your list</h2>
+                      <PlatformMark platform={item.platform} />
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <div className="scroll-x mb-2 rounded-full bg-[var(--surface-2)] p-1">
-                {tabs.map((t) => (
+            )}
+          </section>
+
+          {friendRecs.length > 0 && (
+            <section>
+              <SectionRule>From friends</SectionRule>
+              <div className="scroll-x mt-3 mb-2">
+                {["all", ...friendNames].map((n) => (
                   <button
-                    key={t.id}
+                    key={n}
                     type="button"
-                    onClick={() => setTab(t.id)}
-                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                      tab === t.id
-                        ? "bg-surface text-foreground shadow-sm"
-                        : "text-muted"
+                    className={`shrink-0 rounded-full px-3 py-1.5 font-display text-xs font-light uppercase tracking-[0.14em] ${
+                      friendFilter === n
+                        ? "bg-white text-black"
+                        : "bg-white/8 text-white/60"
                     }`}
+                    onClick={() => setFriendFilter(n)}
                   >
-                    {t.label}
-                    <span className="ml-1 opacity-50">{counts[t.id] ?? 0}</span>
+                    {n === "all" ? "Everyone" : n}
                   </button>
                 ))}
               </div>
-              <div className="divide-y divide-[var(--hairline)]">
-                {trackedList.length === 0 && (
-                  <div className="py-6">
-                    <p className="font-display text-base">Nothing here yet</p>
-                    <p className="mt-1 text-sm text-muted">
-                      Track a title from Suggested, or add one a friend
-                      recommended.
-                    </p>
-                  </div>
-                )}
-                {trackedList.map((item) => (
-                  <ItemRow key={item.id} item={item} kind={kind} />
+              <div className="space-y-1">
+                {shownFriendRecs.map((r) => (
+                  <Link
+                    key={r.id}
+                    href={`/${kind}/${r.itemId}`}
+                    className="pressable flex items-baseline justify-between gap-3 py-2.5"
+                  >
+                    <span className="font-display text-base tracking-wide">
+                      {r.itemName}
+                    </span>
+                    <span className="shrink-0 font-display text-xs font-light text-muted">
+                      {r.author}
+                    </span>
+                  </Link>
                 ))}
               </div>
             </section>
-          </>
-        )}
-      </div>
+          )}
+
+          {comingUp && (
+            <section>
+              <SectionRule>Coming up next</SectionRule>
+              <Link
+                href={`/${kind}/${comingUp.id}`}
+                className="pressable mt-4 block"
+              >
+                <CoverCard
+                  name={comingUp.name}
+                  kind={kind}
+                  imageUrl={comingUp.imageUrl}
+                  rating={comingUp.rating}
+                  variant="hero"
+                />
+                <p className="mt-3 font-display text-2xl font-medium leading-tight tracking-wide">
+                  {comingUp.name}
+                </p>
+                <p className="mt-1 font-display text-sm font-light uppercase tracking-[0.12em] text-white/60">
+                  {comingUp.nextLabel || comingUp.releaseDate} ·{" "}
+                  {daysLabel(upcomingIso(comingUp))}
+                </p>
+              </Link>
+            </section>
+          )}
+
+          <section>
+            <SectionRule>Your list</SectionRule>
+            <div className="scroll-x mt-3 mb-2">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 font-display text-xs font-light uppercase tracking-[0.12em] ${
+                    tab === t.id
+                      ? "bg-white text-black"
+                      : "text-white/50"
+                  }`}
+                >
+                  {t.label}
+                  <span className="ml-1 opacity-50">{counts[t.id] ?? 0}</span>
+                </button>
+              ))}
+            </div>
+            <div className="divide-y divide-white/10">
+              {trackedList.length === 0 && (
+                <div className="py-6">
+                  <p className="font-display text-base">Nothing here yet</p>
+                  <p className="mt-1 text-sm text-muted">
+                    Track a title from Suggested, or add one a friend
+                    recommended.
+                  </p>
+                </div>
+              )}
+              {trackedList.map((item) => (
+                <ItemRow key={item.id} item={item} kind={kind} />
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

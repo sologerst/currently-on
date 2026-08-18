@@ -1,18 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, JetBrains_Mono, Syne } from "next/font/google";
+import {
+  Barlow_Condensed,
+  Bebas_Neue,
+  Figtree,
+  JetBrains_Mono,
+} from "next/font/google";
+import type { ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
-const display = Syne({
-  variable: "--font-syne",
+const display = Barlow_Condensed({
+  variable: "--font-oswald",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+});
+
+const logo = Bebas_Neue({
+  variable: "--font-bebas",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 const body = Figtree({
   variable: "--font-body",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const mono = JetBrains_Mono({
@@ -22,14 +35,14 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Currently On",
+  title: "Always On",
   description:
     "Track music, TV, movies, podcasts, and books — plus friend recommendations.",
-  applicationName: "Currently On",
+  applicationName: "Always On",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Currently On",
+    statusBarStyle: "black-translucent",
+    title: "Always On",
   },
   icons: {
     icon: "/icons/icon-192.png",
@@ -39,18 +52,22 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#EEF1F4",
+  themeColor: "#05080d",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <html
       lang="en"
-      className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
+      className={`${display.variable} ${logo.variable} ${body.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col text-foreground">
         <AppShell>{children}</AppShell>

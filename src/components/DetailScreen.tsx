@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Badge, Poster, StarRating } from "@/components/MediaBits";
+import { AvatarMark } from "@/components/AvatarMark";
+import {
+  Badge,
+  Poster,
+  REEL_FEELS,
+  StarRating,
+} from "@/components/MediaBits";
 import { CATEGORY_META, lookItUpUrl } from "@/lib/categories";
 import { getItem } from "@/lib/catalog";
 import { fetchCatalogItem } from "@/lib/catalog-client";
+import { ratingLabel } from "@/lib/ratings";
 import { useTracker } from "@/lib/tracker";
 import type { CatalogItem, CategoryKind } from "@/lib/types";
 
@@ -29,6 +36,7 @@ export function DetailScreen({
     useTracker();
   const rec = getTracked(kind, id);
   const [note, setNote] = useState("");
+  const [feels, setFeels] = useState<string[]>([]);
 
   useEffect(() => {
     if (seed) return;
@@ -48,135 +56,172 @@ export function DetailScreen({
     return <p className="p-6 text-sm text-muted">Not found.</p>;
   }
 
+  const score = ratingLabel(rec?.myRating || item.rating);
+  const review = rec?.myReview ?? "";
+
   return (
-    <div className="pb-6">
-      <div
-        className="px-4 pb-8 pt-4"
-        style={{
-          background: `linear-gradient(165deg, ${meta.hex} 0%, color-mix(in srgb, ${meta.hex} 68%, #0b1020) 100%)`,
-          color: meta.onDark ? "#12141A" : "#fff",
-        }}
-      >
+    <div className="mx-auto max-w-lg px-4 pb-8 pt-3">
+      <p className="mb-3 flex items-center gap-2 font-display text-xs font-light tracking-wide text-white/80">
+        <AvatarMark size="sm" />
+        <span>
+          {state.displayName || "You"}
+          <span className="text-white/45">
+            {kind === "music" ? " right now:" : " last watch:"}
+          </span>
+        </span>
+      </p>
+
+      <Poster
+        name={item.name}
+        kind={kind}
+        imageUrl={item.imageUrl}
+        variant="hero"
+      />
+
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-[1.85rem] font-semibold leading-[1.05] tracking-wide">
+            {item.name}
+          </h1>
+          {item.author && (
+            <p className="mt-1 font-display text-sm font-light text-white/70">
+              {item.author}
+            </p>
+          )}
+        </div>
         <Link
           href={`/${kind}`}
-          className="text-sm font-medium opacity-75"
-          style={{ color: "inherit" }}
+          className="shrink-0 font-display text-[11px] font-light uppercase tracking-[0.16em] text-white/50"
         >
-          ← {meta.label}
+          ← {meta.tab}
         </Link>
-        <div className="mt-5 flex gap-4">
-          <Poster
-            name={item.name}
-            kind={kind}
-            large
-            imageUrl={item.imageUrl}
-          />
-          <div className="min-w-0 flex-1 self-end pb-1">
-            <h1 className="font-display text-[1.85rem] leading-[1.05]">
-              {item.name}
-            </h1>
-            {item.author && (
-              <p className="mt-1 text-sm opacity-80">{item.author}</p>
-            )}
-          </div>
-        </div>
       </div>
 
-      <div className="mx-auto -mt-4 max-w-lg space-y-4 px-4">
-        <div className="rounded-[1.35rem] bg-surface p-4 shadow-[0_12px_32px_rgba(18,20,26,0.06)]">
-          <div className="flex flex-wrap gap-1.5">
-            {item.seasonCount ? <Badge>{item.seasonCount} seasons</Badge> : null}
-            {item.runningStatus ? <Badge>{item.runningStatus}</Badge> : null}
-            {item.rating ? <Badge>Community {item.rating}</Badge> : null}
-            {item.platform ? <Badge>{item.platform}</Badge> : null}
-            {item.genre ? <Badge>{item.genre}</Badge> : null}
-            {item.genres?.slice(0, 5).map((g) => (
-              <Badge key={g}>{g}</Badge>
-            ))}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {!rec && (
-              <button
-                type="button"
-                className="btn-primary"
-                style={{
-                  background: meta.hex,
-                  color: meta.onDark ? "#12141A" : "#fff",
-                }}
-                onClick={() =>
-                  track(kind, id, undefined, item.name, item.imageUrl)
-                }
-              >
-                Add to my list
-              </button>
-            )}
-            <a
-              className="btn-ghost"
-              href={lookItUpUrl(item.name)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Look it up
-            </a>
-          </div>
-        </div>
-
-        <section className="rounded-[1.35rem] bg-surface p-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
-            Your rating
-          </p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
           <StarRating
-            value={rec?.myRating ?? 0}
+            value={rec?.myRating || item.rating || 0}
             onChange={(n) => {
               if (!rec) track(kind, id, undefined, item.name, item.imageUrl);
               setRating(kind, id, n);
             }}
           />
-          <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted">
-            Notes
+          {score && (
+            <span className="font-display text-lg font-semibold text-white">
+              {score}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="font-display text-[11px] font-light uppercase tracking-[0.14em] text-[var(--cyan)]">
+            Reel Feels:
+          </span>
+          {REEL_FEELS.map((e) => (
+            <button
+              key={e}
+              type="button"
+              className={`pressable text-lg ${
+                feels.includes(e) ? "opacity-100" : "opacity-40"
+              }`}
+              onClick={() =>
+                setFeels((curr) =>
+                  curr.includes(e) ? curr.filter((x) => x !== e) : [...curr, e],
+                )
+              }
+              aria-label={`Feel ${e}`}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="mt-4 font-display text-[10px] font-light uppercase tracking-[0.18em] text-white/50">
+        Where to watch
+      </p>
+      <p className="mt-1 font-display text-sm font-light uppercase tracking-[0.12em]">
+        {item.platform || "Look it up"}
+        {item.notYetStreaming ? " · not yet streaming" : ""}
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {item.seasonCount ? <Badge>{item.seasonCount} seasons</Badge> : null}
+        {item.runningStatus ? <Badge>{item.runningStatus}</Badge> : null}
+        {item.genre ? <Badge>{item.genre}</Badge> : null}
+        {item.genres?.slice(0, 5).map((g) => (
+          <Badge key={g}>{g}</Badge>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {!rec && (
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => track(kind, id, undefined, item.name, item.imageUrl)}
+          >
+            Add to my list
+          </button>
+        )}
+        <a
+          className="btn-ghost"
+          href={lookItUpUrl(item.name)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Look it up
+        </a>
+      </div>
+
+      <section className="panel relative mt-6 px-4 pb-8 pt-4">
+        <p className="font-display text-lg font-semibold tracking-wide">Why?</p>
+        <textarea
+          className="mt-2 min-h-28 w-full resize-none bg-transparent font-display text-sm font-light leading-relaxed tracking-wide text-white/90 outline-none"
+          placeholder="A short take…"
+          value={review}
+          onChange={(e) => {
+            if (!rec) track(kind, id, undefined, item.name, item.imageUrl);
+            setReview(kind, id, e.target.value);
+          }}
+        />
+        <AvatarMark
+          size="sm"
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2"
+        />
+      </section>
+
+      {state.displayName && rec && (
+        <section className="panel mt-8 p-4">
+          <p className="font-display text-lg font-semibold tracking-wide">
+            Recommend to friends
           </p>
           <textarea
-            className="min-h-28 w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] p-3 text-sm outline-none focus:border-foreground/25"
-            value={rec?.myReview ?? ""}
-            onChange={(e) => {
-              if (!rec) track(kind, id, undefined, item.name, item.imageUrl);
-              setReview(kind, id, e.target.value);
-            }}
+            className="mt-3 min-h-20 w-full rounded-2xl border border-white/20 bg-transparent p-3 font-display text-sm font-light outline-none"
+            placeholder="A short note"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
           />
+          <button
+            type="button"
+            className="btn-ghost mt-3"
+            onClick={() => {
+              recommend(kind, id, note, item.name);
+              setNote("");
+            }}
+          >
+            Post
+          </button>
         </section>
-
-        {state.displayName && rec && (
-          <section className="rounded-[1.35rem] bg-surface p-4">
-            <p className="font-display text-lg">Recommend to friends</p>
-            <textarea
-              className="mt-3 min-h-20 w-full rounded-2xl border border-[var(--hairline)] bg-[var(--background)] p-3 text-sm outline-none focus:border-foreground/25"
-              placeholder="A short note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn-primary mt-3"
-              style={{
-                background: meta.hex,
-                color: meta.onDark ? "#12141A" : "#fff",
-              }}
-              onClick={() => {
-                recommend(kind, id, note, item.name);
-                setNote("");
-              }}
-            >
-              Post
-            </button>
-          </section>
-        )}
-        {!state.displayName && (
-          <p className="px-1 text-sm text-muted">
-            Sign in on <Link href="/friends" className="underline">Friends</Link>{" "}
-            and set a display name to recommend titles.
-          </p>
-        )}
-      </div>
+      )}
+      {!state.displayName && (
+        <p className="mt-6 px-1 text-sm text-muted">
+          Sign in on{" "}
+          <Link href="/friends" className="underline">
+            Friends
+          </Link>{" "}
+          and set a display name to recommend titles.
+        </p>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ export const CATEGORY_META: Record<
   ScreenKind,
   {
     label: string;
+    tab: string;
     hex: string;
     onDark: boolean;
     href: string;
@@ -12,36 +13,48 @@ export const CATEGORY_META: Record<
 > = {
   music: {
     label: "Music",
-    hex: "#1AAA6E",
+    tab: "MUSIC",
+    hex: "#3DD68C",
     onDark: true,
     href: "/music",
     icon: "♪",
   },
-  tv: { label: "TV", hex: "#E23B45", onDark: false, href: "/tv", icon: "▣" },
+  tv: {
+    label: "TV",
+    tab: "SHOWS",
+    hex: "#FF5A63",
+    onDark: false,
+    href: "/tv",
+    icon: "▣",
+  },
   movies: {
     label: "Movies",
-    hex: "#2F6BFF",
+    tab: "MOVIES",
+    hex: "#6B9BFF",
     onDark: false,
     href: "/movies",
     icon: "▶",
   },
   podcasts: {
     label: "Podcasts",
-    hex: "#0D9488",
+    tab: "PODCASTS",
+    hex: "#2DD4BF",
     onDark: false,
     href: "/podcasts",
     icon: "◉",
   },
   books: {
     label: "Books",
-    hex: "#D97706",
+    tab: "BOOKS",
+    hex: "#F0A12E",
     onDark: true,
     href: "/books",
     icon: "▤",
   },
   friends: {
     label: "Friends",
-    hex: "#EAB308",
+    tab: "FRIENDS",
+    hex: "#FFCC00",
     onDark: true,
     href: "/friends",
     icon: "◎",

@@ -39,9 +39,9 @@ export function OnDeckTicker() {
   if (!ready) return null;
 
   return (
-    <div className="border-b border-[var(--hairline)] bg-transparent">
+    <div className="border-b border-white/10 bg-transparent">
       <div className="scroll-x mx-auto max-w-lg items-center px-3 py-2.5">
-        <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+        <span className="shrink-0 font-display text-[10px] font-light uppercase tracking-[0.18em] text-muted">
           On deck
         </span>
         {items.length === 0 ? (
@@ -54,17 +54,17 @@ export function OnDeckTicker() {
               <Link
                 key={`${item.kind}:${item.id}`}
                 href={`/${item.kind}/${item.id}`}
-                className="pressable flex shrink-0 items-center gap-2 rounded-full bg-surface px-2.5 py-1.5"
+                className="pressable flex shrink-0 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2.5 py-1.5"
               >
                 <span
                   className="h-2 w-2 rounded-full"
                   style={{ background: meta.hex }}
                 />
-                <span className="max-w-28 truncate text-xs font-medium">
+                <span className="max-w-28 truncate font-display text-xs font-medium tracking-wide">
                   {item.name}
                 </span>
                 {iso !== "9999-12-31" && (
-                  <span className="font-mono text-[10px] text-muted">
+                  <span className="font-display text-[10px] font-light text-muted">
                     {daysUntil(iso)}
                   </span>
                 )}

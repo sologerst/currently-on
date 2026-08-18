@@ -6,14 +6,16 @@ import { test, expect, request as pwRequest } from "@playwright/test";
  */
 
 test.describe("Home", () => {
-  test("/ loads and shows Currently On brand + category tiles", async ({
+  test("/ loads and shows Always On brand + category tabs", async ({
     page,
   }) => {
     const resp = await page.goto("/", { waitUntil: "domcontentloaded" });
     expect(resp?.status()).toBe(200);
-    await expect(page.getByRole("heading", { name: /currently on/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /music/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /friends/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /always on home/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /what.?s hot now/i }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /movies/i })).toBeVisible();
   });
 });
 
@@ -52,7 +54,7 @@ test.describe("PWA / infra", () => {
     const resp = await ctx.get((baseURL ?? "") + "/manifest.webmanifest");
     expect(resp.status()).toBe(200);
     const body = await resp.text();
-    expect(body).toMatch(/Currently On/i);
+    expect(body).toMatch(/Always On|Currently On/i);
     await ctx.dispose();
   });
 
