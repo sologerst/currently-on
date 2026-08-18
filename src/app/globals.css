@@ -1,24 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #eef1f4;
-  --foreground: #12141a;
-  --muted: #5c6370;
-  --surface: #ffffff;
-  --surface-2: #e4e8ee;
-  --hairline: color-mix(in srgb, var(--foreground) 8%, transparent);
-  --accent: #12141a;
-  --music: #1aaa6e;
-  --tv: #e23b45;
-  --movies: #2f6bff;
-  --podcasts: #0d9488;
-  --books: #d97706;
-  --friends: #eab308;
+  --background: #05080d;
+  --foreground: #f4f7fb;
+  --muted: #8eb4c0;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-2: rgba(255, 255, 255, 0.1);
+  --hairline: rgba(255, 255, 255, 0.2);
+  --accent: #ffcc00;
+  --gold: #ffcc00;
+  --cyan: #7ac6d0;
+  --suggest: #ffb43a;
+  --music: #3dd68c;
+  --tv: #ff5a63;
+  --movies: #6b9bff;
+  --podcasts: #2dd4bf;
+  --books: #f0a12e;
+  --friends: #ffcc00;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
   --nav-h: 4.25rem;
-  --radius-lg: 1.25rem;
-  --radius-xl: 1.75rem;
+  --radius-lg: 0.9rem;
+  --radius-xl: 1.15rem;
 }
 
 @theme inline {
@@ -27,30 +30,37 @@
   --color-muted: var(--muted);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-gold: var(--gold);
+  --color-cyan: var(--cyan);
   --font-sans: var(--font-body);
-  --font-display: var(--font-syne);
+  --font-display: var(--font-oswald);
+  --font-logo: var(--font-bebas);
   --font-mono: var(--font-code);
 }
 
 html {
   height: 100%;
-  background: var(--background);
+  background: #05080d;
+  color-scheme: dark;
 }
 
 body {
   min-height: 100%;
-  background:
-    radial-gradient(120% 80% at 50% -10%, #ffffff 0%, transparent 55%),
-    var(--background);
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+  background: #05080d;
 }
 
 .font-display {
-  font-family: var(--font-syne), var(--font-body), system-ui, sans-serif;
-  letter-spacing: -0.03em;
+  font-family: var(--font-oswald), var(--font-body), system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.font-logo {
+  font-family: var(--font-bebas), var(--font-oswald), system-ui, sans-serif;
+  letter-spacing: 0.08em;
 }
 
 .font-mono {
@@ -58,13 +68,118 @@ body {
 }
 
 .app-shell {
+  position: relative;
+  z-index: 1;
   padding-bottom: calc(var(--nav-h) + var(--safe-bottom));
 }
 
+.app-shell.is-splash {
+  padding-bottom: var(--safe-bottom);
+}
+
+.scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.scene-wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(42% 78% at 50% -8%, rgba(56, 118, 255, 0.42) 0%, transparent 64%),
+    linear-gradient(180deg, #07111d 0%, #05070c 48%, #07040c 100%);
+}
+
+.scene-layer[data-scene="splash"] .scene-wash {
+  background:
+    radial-gradient(28% 100% at 50% 42%, rgba(48, 110, 255, 0.72) 0%, rgba(10, 28, 80, 0.28) 42%, transparent 70%),
+    radial-gradient(80% 60% at 50% 100%, #02040a 0%, #05080d 100%),
+    #02040a;
+}
+
+.scene-layer[data-scene="music"] .scene-wash {
+  background:
+    radial-gradient(70% 55% at 50% 0%, rgba(168, 36, 128, 0.5) 0%, transparent 58%),
+    linear-gradient(180deg, #2a0a28 0%, #0c0310 55%, #140816 100%);
+}
+
+.scene-layer[data-scene="tv"] .scene-wash {
+  background:
+    radial-gradient(80% 50% at 50% -10%, rgba(0, 90, 110, 0.55) 0%, transparent 55%),
+    radial-gradient(70% 40% at 80% 100%, rgba(180, 70, 20, 0.28), transparent 50%),
+    linear-gradient(180deg, #062028 0%, #05080d 100%);
+}
+
+.scene-layer[data-scene="movies"] .scene-wash {
+  background:
+    radial-gradient(70% 50% at 50% -8%, rgba(120, 18, 48, 0.55) 0%, transparent 58%),
+    linear-gradient(180deg, #1a0810 0%, #07050a 100%);
+}
+
+.scene-layer[data-scene="podcasts"] .scene-wash {
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(40, 70, 160, 0.45) 0%, transparent 55%),
+    linear-gradient(180deg, #0a1024 0%, #05080d 100%);
+}
+
+.scene-layer[data-scene="books"] .scene-wash {
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(140, 70, 20, 0.4) 0%, transparent 55%),
+    linear-gradient(180deg, #1a1008 0%, #05080d 100%);
+}
+
+.scene-layer[data-scene="friends"] .scene-wash {
+  background:
+    radial-gradient(70% 50% at 50% -6%, rgba(90, 20, 70, 0.5) 0%, transparent 55%),
+    radial-gradient(80% 40% at 50% 110%, rgba(140, 30, 20, 0.35), transparent 50%),
+    linear-gradient(180deg, #140814 0%, #08040a 100%);
+}
+
+.scene-layer[data-scene="profile"] .scene-wash {
+  background:
+    radial-gradient(80% 50% at 50% -10%, rgba(12, 90, 100, 0.5) 0%, transparent 55%),
+    linear-gradient(180deg, #062028 0%, #05080d 100%);
+}
+
+.film-grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  animation: grain-shift 1.2s steps(3) infinite;
+}
+
+@keyframes grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-2%, 1%);
+  }
+  66% {
+    transform: translate(1%, -2%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.logo-glow {
+  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.28))
+    drop-shadow(0 0 42px rgba(90, 140, 255, 0.22));
+}
+
 .glass-bar {
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: color-mix(in srgb, #05080d 62%, transparent);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
 
 .hairline {
@@ -135,7 +250,7 @@ body {
 
 .scroll-x {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -149,16 +264,23 @@ body {
   width: 100%;
   border-radius: 999px;
   border: 1px solid var(--hairline);
-  background: var(--surface);
+  background: rgba(0, 0, 0, 0.28);
   padding: 0.7rem 1rem;
   font-size: 0.9375rem;
+  color: var(--foreground);
   outline: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.field::placeholder {
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 
 .field:focus {
-  border-color: color-mix(in srgb, var(--foreground) 28%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--foreground) 6%, transparent);
+  border-color: color-mix(in srgb, #fff 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #fff 8%, transparent);
 }
 
 .btn-primary {
@@ -166,11 +288,17 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0.55rem 1rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #fff;
-  transition: transform 160ms ease, opacity 160ms ease;
+  padding: 0.7rem 1.15rem;
+  font-family: var(--font-oswald), sans-serif;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #05080d;
+  background: #fff;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
 }
 
 .btn-primary:active {
@@ -182,9 +310,34 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  background: transparent;
+  padding: 0.7rem 1.15rem;
+  font-family: var(--font-oswald), sans-serif;
+  font-size: 0.82rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.panel {
+  border-radius: var(--radius-xl);
   border: 1px solid var(--hairline);
-  background: var(--surface);
-  padding: 0.55rem 1rem;
-  font-size: 0.8125rem;
+  background: rgba(4, 8, 14, 0.45);
+}
+
+.tab-link {
+  font-family: var(--font-oswald), sans-serif;
+  font-weight: 300;
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--cyan) 75%, transparent);
+}
+
+.tab-link.is-active {
+  color: #fff;
   font-weight: 500;
+  font-size: 1.05rem;
 }

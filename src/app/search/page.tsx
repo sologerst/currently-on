@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { Poster } from "@/components/MediaBits";
+import { CoverCard } from "@/components/MediaBits";
+import { SectionRule } from "@/components/SectionRule";
 import { CATEGORY_META } from "@/lib/categories";
 import { fetchCatalogSearch } from "@/lib/catalog-client";
 import type { CatalogItem } from "@/lib/types";
@@ -11,41 +12,39 @@ import type { CatalogItem } from "@/lib/types";
 function Results() {
   const params = useSearchParams();
   const q = params.get("q") ?? "";
+  const query = q.trim();
   const [hits, setHits] = useState<CatalogItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [resolvedQuery, setResolvedQuery] = useState("");
   const groups = ["music", "tv", "movies", "podcasts", "books"] as const;
+  const loading = query !== "" && resolvedQuery !== query;
 
   useEffect(() => {
-    const query = q.trim();
-    if (!query) {
-      setHits([]);
-      setLoading(false);
-      return;
-    }
+    if (!query) return;
     let cancelled = false;
     void (async () => {
-      setLoading(true);
       try {
         const items = await fetchCatalogSearch(query);
         if (!cancelled) setHits(items);
       } catch {
         if (!cancelled) setHits([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setResolvedQuery(query);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [q]);
+  }, [query]);
 
-  const shown = q.trim() ? hits : [];
+  const shown = query ? hits : [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <h1 className="font-display text-[2.4rem] leading-none">Search</h1>
-      <p className="mt-2 font-mono text-sm text-muted">
-        {q || "Type in the bar above"}
+      <h1 className="font-display text-[2.4rem] font-semibold italic leading-none">
+        Search
+      </h1>
+      <p className="mt-2 font-display text-sm font-light uppercase tracking-[0.16em] text-muted">
+        {q || "Type in the menu search"}
       </p>
       {!q.trim() && (
         <p className="mt-8 text-sm leading-relaxed text-muted">
@@ -59,30 +58,27 @@ function Results() {
         if (list.length === 0) return null;
         return (
           <section key={kind} className="mt-6">
-            <h2
-              className="font-display text-lg"
-              style={{ color: CATEGORY_META[kind].hex }}
-            >
-              {CATEGORY_META[kind].label}
-            </h2>
-            <ul className="mt-2 divide-y divide-[var(--hairline)]">
+            <SectionRule>{CATEGORY_META[kind].tab}</SectionRule>
+            <ul className="mt-3 divide-y divide-white/10">
               {list.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={`/${item.kind}/${item.id}`}
                     className="pressable flex items-center gap-3 py-3"
                   >
-                    <Poster
+                    <CoverCard
                       name={item.name}
                       kind={item.kind}
                       imageUrl={item.imageUrl}
+                      rating={item.rating}
+                      variant="sm"
                     />
                     <div className="min-w-0">
-                      <span className="block truncate font-medium">
+                      <span className="block truncate font-display font-medium tracking-wide">
                         {item.name}
                       </span>
                       {item.author && (
-                        <span className="block truncate text-xs text-muted">
+                        <span className="block truncate font-display text-xs font-light text-muted">
                           {item.author}
                         </span>
                       )}

@@ -47,8 +47,10 @@ export function CalendarScreen() {
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-[2.4rem] leading-none">Calendar</h1>
-        <div className="flex items-center gap-1 rounded-full bg-[var(--surface-2)] p-1">
+        <h1 className="font-display text-[2.4rem] font-semibold italic leading-none">
+          Calendar
+        </h1>
+        <div className="flex items-center gap-1 rounded-full border border-white/15 p-1">
           <button
             type="button"
             className="pressable grid h-8 w-8 place-items-center rounded-full"
@@ -60,7 +62,7 @@ export function CalendarScreen() {
           >
             ‹
           </button>
-          <span className="min-w-24 text-center font-mono text-xs">
+          <span className="min-w-24 text-center font-display text-xs font-light uppercase tracking-[0.14em]">
             {cursor.toLocaleString("en", { month: "short", year: "numeric" })}
           </span>
           <button
@@ -77,8 +79,8 @@ export function CalendarScreen() {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[1.35rem] bg-surface p-3">
-        <div className="grid grid-cols-7 gap-1 text-center font-mono text-[10px] text-muted">
+      <div className="panel mt-5 p-3">
+        <div className="grid grid-cols-7 gap-1 text-center font-display text-[10px] font-light uppercase tracking-[0.14em] text-muted">
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
             <div key={i} className="py-1">
               {d}
@@ -95,9 +97,7 @@ export function CalendarScreen() {
                 type="button"
                 onClick={() => setSelected(iso)}
                 className={`pressable min-h-12 rounded-2xl text-sm ${
-                  active
-                    ? "bg-foreground text-white"
-                    : "hover:bg-[var(--surface-2)]"
+                  active ? "bg-white text-black" : "hover:bg-white/8"
                 }`}
               >
                 {day}
@@ -108,7 +108,7 @@ export function CalendarScreen() {
                       className="h-1.5 w-1.5 rounded-full"
                       style={{
                         background: active
-                          ? "#fff"
+                          ? "#05080d"
                           : CATEGORY_META[it.kind].hex,
                       }}
                     />
@@ -120,8 +120,8 @@ export function CalendarScreen() {
         </div>
       </div>
 
-      <section className="mt-4 rounded-[1.35rem] bg-surface p-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+      <section className="panel mt-4 p-4">
+        <p className="font-display text-[10px] font-light uppercase tracking-[0.18em] text-muted">
           {selectedIso || "Pick a day"}
         </p>
         {dayItems.length === 0 && (
@@ -134,7 +134,9 @@ export function CalendarScreen() {
                 className="h-2 w-2 rounded-full"
                 style={{ background: CATEGORY_META[it.kind].hex }}
               />
-              <span className="font-medium">{it.name}</span>
+              <span className="font-display font-medium tracking-wide">
+                {it.name}
+              </span>
               <span className="text-muted">
                 · {it.nextLabel || CATEGORY_META[it.kind].label}
               </span>

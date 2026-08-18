@@ -1,13 +1,13 @@
 {
-  "name": "Currently On",
-  "short_name": "Currently On",
+  "name": "Always On",
+  "short_name": "Always On",
   "description": "Track music, TV, movies, podcasts, and books.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#EEF1F4",
-  "theme_color": "#EEF1F4",
+  "background_color": "#05080d",
+  "theme_color": "#05080d",
   "icons": [
     {
       "src": "/icons/icon-192.png",

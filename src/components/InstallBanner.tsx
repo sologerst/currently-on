@@ -47,9 +47,9 @@ export function InstallBanner() {
 
   return (
     <div className="mx-auto max-w-lg px-3 pt-3">
-      <div className="flex items-start gap-3 rounded-[1.25rem] bg-surface p-3.5">
+      <div className="panel flex items-start gap-3 p-3.5">
         <div className="min-w-0 flex-1">
-          <p className="font-display text-sm">Install Currently On</p>
+          <p className="font-display text-sm tracking-wide">Install Always On</p>
           <p className="mt-0.5 text-xs leading-relaxed text-muted">
             {ios
               ? "In Safari, tap Share, then Add to Home Screen."
@@ -59,7 +59,7 @@ export function InstallBanner() {
         {deferred && (
           <button
             type="button"
-            className="btn-primary shrink-0 bg-foreground"
+            className="btn-primary shrink-0 !px-3 !py-1.5 !text-[10px]"
             onClick={async () => {
               await deferred.prompt();
               setDeferred(null);
@@ -70,7 +70,7 @@ export function InstallBanner() {
         )}
         <button
           type="button"
-          className="shrink-0 text-xs text-muted"
+          className="shrink-0 font-display text-[10px] uppercase tracking-[0.14em] text-muted"
           onClick={() => setDismissed(true)}
         >
           Later
