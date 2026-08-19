@@ -14,15 +14,18 @@ function sceneFromPath(pathname: string) {
   if (pathname.startsWith("/movies")) return "movies";
   if (pathname.startsWith("/podcasts")) return "podcasts";
   if (pathname.startsWith("/books")) return "books";
-  if (pathname.startsWith("/friends")) return "friends";
-  if (pathname.startsWith("/diary")) return "profile";
+  if (pathname.startsWith("/friends") || pathname.startsWith("/join")) return "friends";
+  if (pathname.startsWith("/diary") || pathname.startsWith("/u/")) return "profile";
   return "home";
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { ready, signedIn } = useTracker();
-  const splash = pathname.startsWith("/friends") && ready && !signedIn;
+  const splash =
+    (pathname.startsWith("/friends") || pathname.startsWith("/join")) &&
+    ready &&
+    !signedIn;
   const scene = splash ? "splash" : sceneFromPath(pathname);
 
   return (

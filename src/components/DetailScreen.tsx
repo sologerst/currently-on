@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AvatarMark } from "@/components/AvatarMark";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import {
   Badge,
   Poster,
@@ -11,6 +11,7 @@ import {
 } from "@/components/MediaBits";
 import { CATEGORY_META, lookItUpUrl } from "@/lib/categories";
 import { getItem } from "@/lib/catalog";
+import { RecommendComposer } from "@/components/RecommendComposer";
 import { fetchCatalogItem } from "@/lib/catalog-client";
 import { ratingLabel } from "@/lib/ratings";
 import { useTracker } from "@/lib/tracker";
@@ -32,10 +33,9 @@ export function DetailScreen({
   const item = seed ?? (live?.key === itemKey ? live.item : null);
   const loading = !seed && live?.key !== itemKey;
   const meta = CATEGORY_META[kind];
-  const { getTracked, track, setRating, setReview, recommend, state } =
+  const { getTracked, track, setRating, setReview, state } =
     useTracker();
   const rec = getTracked(kind, id);
-  const [note, setNote] = useState("");
   const [feels, setFeels] = useState<string[]>([]);
 
   useEffect(() => {
@@ -62,7 +62,11 @@ export function DetailScreen({
   return (
     <div className="mx-auto max-w-lg px-4 pb-8 pt-3">
       <p className="mb-3 flex items-center gap-2 font-display text-xs font-light tracking-wide text-white/80">
-        <AvatarMark size="sm" />
+        <ProfileAvatar
+          path={state.avatarPath}
+          name={state.displayName || state.handle}
+          size="sm"
+        />
         <span>
           {state.displayName || "You"}
           <span className="text-white/45">
@@ -184,34 +188,23 @@ export function DetailScreen({
             setReview(kind, id, e.target.value);
           }}
         />
-        <AvatarMark
+        <ProfileAvatar
+          path={state.avatarPath}
+          name={state.displayName || state.handle}
           size="sm"
           className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2"
         />
       </section>
 
-      {state.displayName && rec && (
-        <section className="panel mt-8 p-4">
-          <p className="font-display text-lg font-semibold tracking-wide">
-            Recommend to friends
-          </p>
-          <textarea
-            className="mt-3 min-h-20 w-full rounded-2xl border border-white/20 bg-transparent p-3 font-display text-sm font-light outline-none"
-            placeholder="A short note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <button
-            type="button"
-            className="btn-ghost mt-3"
-            onClick={() => {
-              recommend(kind, id, note, item.name);
-              setNote("");
-            }}
-          >
-            Post
-          </button>
-        </section>
+      {state.displayName && (
+        <RecommendComposer
+          preset={{
+            kind,
+            id,
+            name: item.name,
+            imageUrl: item.imageUrl,
+          }}
+        />
       )}
       {!state.displayName && (
         <p className="mt-6 px-1 text-sm text-muted">

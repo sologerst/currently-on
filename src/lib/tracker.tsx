@@ -12,6 +12,28 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { defaultStatus, isFinishedStatus } from "./categories";
 import { getCatalog, getItem, seedTrackedIds } from "./catalog";
+import type {
+  ListVisibility,
+  MediaList,
+  RecommendInput,
+  SocialGraph,
+} from "./community-types";
+import {
+  createCustomList as createCustomListRemote,
+  deleteCustomList,
+  followUser,
+  loadLists,
+  loadSocialGraph,
+  redeemInvite,
+  requestFriend,
+  respondFriend,
+  unfriend,
+  unfollowUser,
+  updateListMeta,
+  updateProfile as updateProfileRemote,
+  uploadAvatar,
+  pinToLoving,
+} from "./community-remote";
 import { createClient, isSupabaseConfigured } from "./supabase/client";
 import {
   deleteTracked,
@@ -22,7 +44,6 @@ import {
   loadRemoteState,
   markNotificationsRead,
   toggleReaction,
-  updateDisplayName,
   upsertDiary,
   upsertTracked,
 } from "./tracker-remote";
@@ -33,6 +54,7 @@ import type {
   MyStatus,
   PersistedState,
   Recommendation,
+  RecVisibility,
   TrackedRecord,
 } from "./types";
 
@@ -60,27 +82,40 @@ function emptyGuestState(): PersistedState {
   const now = new Date().toISOString();
   return {
     displayName: "",
+    handle: "",
+    bio: "",
+    avatarPath: null,
+    visibility: "public",
+    inviteCode: "",
     tracked,
     recommendations: [
       {
         id: "rec-demo-1",
         author: "Sam",
+        authorId: "demo-sam",
+        authorHandle: "sam",
         itemKind: "tv",
         itemId: "tv-4",
         itemName: "County Line",
         note: "Start with season 2 — it clicks.",
         timestamp: now,
+        visibility: "friends",
+        pinned: false,
         reactions: { "🔥": ["Sam"] },
         comments: [],
       },
       {
         id: "rec-demo-2",
         author: "Jules",
+        authorId: "demo-jules",
+        authorHandle: "jules",
         itemKind: "books",
         itemId: "bk-3",
         itemName: "Signal Loss",
         note: "One sitting. Trust me.",
         timestamp: now,
+        visibility: "friends",
+        pinned: false,
         reactions: {},
         comments: [],
       },
@@ -106,10 +141,26 @@ function emptyGuestState(): PersistedState {
 function emptyAccountState(): PersistedState {
   return {
     displayName: "",
+    handle: "",
+    bio: "",
+    avatarPath: null,
+    visibility: "public",
+    inviteCode: "",
     tracked: {},
     recommendations: [],
     diary: [],
     notifications: [],
+  };
+}
+
+function emptySocial(): SocialGraph {
+  return {
+    followingIds: [],
+    followerIds: [],
+    friendIds: [],
+    incomingRequestIds: [],
+    outgoingRequestIds: [],
+    people: {},
   };
 }
 
@@ -127,10 +178,45 @@ function loadGuest(): PersistedState {
 type TrackerApi = {
   ready: boolean;
   signedIn: boolean;
+  userId: string | null;
   userEmail: string | null;
   state: PersistedState;
+  social: SocialGraph;
+  lists: MediaList[];
+  refreshCommunity: () => Promise<void>;
   signOut: () => Promise<void>;
   setDisplayName: (name: string) => void;
+  saveProfile: (patch: {
+    displayName?: string;
+    handle?: string;
+    bio?: string;
+    visibility?: PersistedState["visibility"];
+  }) => Promise<void>;
+  saveAvatar: (file: File) => Promise<void>;
+  pinLoved: (item: {
+    kind: CategoryKind;
+    id: string;
+    name: string;
+    imageUrl?: string;
+    note: string;
+  }) => Promise<void>;
+  follow: (targetId: string) => Promise<void>;
+  unfollow: (targetId: string) => Promise<void>;
+  addFriend: (targetId: string) => Promise<void>;
+  acceptFriend: (otherId: string) => Promise<void>;
+  declineFriend: (otherId: string) => Promise<void>;
+  removeFriend: (otherId: string) => Promise<void>;
+  redeemInviteCode: (code: string) => Promise<string>;
+  createList: (input: {
+    title: string;
+    description: string;
+    visibility: ListVisibility;
+  }) => Promise<MediaList | null>;
+  saveList: (
+    listId: string,
+    patch: { title?: string; description?: string; visibility?: ListVisibility },
+  ) => Promise<void>;
+  removeList: (listId: string) => Promise<void>;
   track: (
     kind: CategoryKind,
     id: string,
@@ -149,12 +235,7 @@ type TrackerApi = {
   ) => void;
   setRating: (kind: CategoryKind, id: string, rating: number) => void;
   setReview: (kind: CategoryKind, id: string, review: string) => void;
-  recommend: (
-    kind: CategoryKind,
-    id: string,
-    note: string,
-    itemName?: string,
-  ) => void;
+  recommend: (input: RecommendInput) => void;
   react: (recId: string, emoji: string) => void;
   comment: (recId: string, text: string) => void;
   addFromFriend: (
@@ -171,10 +252,34 @@ const Ctx = createContext<TrackerApi | null>(null);
 
 export function TrackerProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedState>(emptyGuestState);
+  const [social, setSocial] = useState<SocialGraph>(emptySocial);
+  const [lists, setLists] = useState<MediaList[]>([]);
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const userIdRef = useRef<string | null>(null);
   const signedIn = Boolean(user);
+
+  const refreshCommunity = useCallback(async (userId?: string) => {
+    const id = userId ?? userIdRef.current;
+    if (!id || !isSupabaseConfigured()) {
+      setSocial(emptySocial());
+      setLists([]);
+      return;
+    }
+    const supabase = createClient();
+    try {
+      let nextLists = await loadLists(supabase, id);
+      if (nextLists.length === 0) {
+        await supabase.rpc("ensure_standard_lists", { p_user_id: id });
+        nextLists = await loadLists(supabase, id);
+      }
+      const nextSocial = await loadSocialGraph(supabase, id);
+      setSocial(nextSocial);
+      setLists(nextLists);
+    } catch (err) {
+      console.error("Failed to load community graph", err);
+    }
+  }, []);
 
   useEffect(() => {
     userIdRef.current = user?.id ?? null;
@@ -202,6 +307,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         try {
           const remote = await loadRemoteState(supabase, session.user.id);
           if (!cancelled) setState(remote);
+          if (!cancelled) await refreshCommunity(session.user.id);
         } catch (err) {
           console.error("Failed to load remote tracker state", err);
           if (!cancelled) setState(emptyAccountState());
@@ -209,6 +315,8 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
         setState(loadGuest());
+        setSocial(emptySocial());
+        setLists([]);
       }
       if (!cancelled) setReady(true);
     }
@@ -228,12 +336,15 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         try {
           const remote = await loadRemoteState(supabase, nextUser.id);
           setState(remote);
+          await refreshCommunity(nextUser.id);
         } catch (err) {
           console.error("Failed to refresh remote tracker state", err);
           setState(emptyAccountState());
         }
       } else {
         setState(loadGuest());
+        setSocial(emptySocial());
+        setLists([]);
       }
       setReady(true);
     });
@@ -242,7 +353,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [refreshCommunity]);
 
   useEffect(() => {
     if (!ready || signedIn) return;
@@ -257,15 +368,33 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
-    const scheduleRefresh = () => {
+    const scheduleCommunity = () => {
       if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
         void (async () => {
           try {
-            const recommendations = await loadRecommendations(supabase);
+            const [recommendations, notificationsRes] = await Promise.all([
+              loadRecommendations(supabase),
+              supabase
+                .from("notifications")
+                .select("*")
+                .eq("user_id", userIdRef.current ?? "")
+                .order("created_at", { ascending: false }),
+            ]);
             if (!cancelled) {
-              setState((s) => ({ ...s, recommendations }));
+              setState((s) => ({
+                ...s,
+                recommendations,
+                notifications: (notificationsRes.data ?? []).map((row) => ({
+                  id: row.id,
+                  text: row.text,
+                  read: row.read,
+                  timestamp: row.created_at,
+                  link: row.link ?? undefined,
+                })),
+              }));
             }
+            await refreshCommunity();
           } catch (err) {
             console.error("Failed to refresh friends feed", err);
           }
@@ -278,17 +407,47 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "recommendations" },
-        scheduleRefresh,
+        scheduleCommunity,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "recommendation_reactions" },
-        scheduleRefresh,
+        scheduleCommunity,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "recommendation_comments" },
-        scheduleRefresh,
+        scheduleCommunity,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "follows" },
+        scheduleCommunity,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friendships" },
+        scheduleCommunity,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        scheduleCommunity,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lists" },
+        scheduleCommunity,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "list_items" },
+        scheduleCommunity,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "recommendation_recipients" },
+        scheduleCommunity,
       )
       .subscribe();
 
@@ -297,7 +456,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
       if (refreshTimer) clearTimeout(refreshTimer);
       void supabase.removeChannel(channel);
     };
-  }, [signedIn]);
+  }, [signedIn, refreshCommunity]);
 
   const patch = useCallback((fn: (s: PersistedState) => PersistedState) => {
     setState((s) => fn(s));
@@ -342,8 +501,12 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
     return {
       ready,
       signedIn,
+      userId: user?.id ?? null,
       userEmail: user?.email ?? null,
       state,
+      social,
+      lists,
+      refreshCommunity: () => refreshCommunity(),
       reactions: REACTIONS,
       signOut: async () => {
         if (!isSupabaseConfigured()) return;
@@ -354,7 +517,105 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         patch((s) => ({ ...s, displayName: name }));
         void withRemote(async (userId) => {
           const supabase = createClient();
-          await updateDisplayName(supabase, userId, name);
+          await updateProfileRemote(supabase, userId, { displayName: name });
+        });
+      },
+      saveProfile: async (profilePatch) => {
+        patch((s) => ({
+          ...s,
+          displayName: profilePatch.displayName ?? s.displayName,
+          handle: profilePatch.handle ?? s.handle,
+          bio: profilePatch.bio ?? s.bio,
+          visibility: profilePatch.visibility ?? s.visibility,
+        }));
+        await withRemote(async (userId) => {
+          const supabase = createClient();
+          await updateProfileRemote(supabase, userId, profilePatch);
+        });
+      },
+      saveAvatar: async (file) => {
+        await withRemote(async (userId) => {
+          const supabase = createClient();
+          const path = await uploadAvatar(supabase, userId, file);
+          setState((s) => ({ ...s, avatarPath: path }));
+        });
+      },
+      pinLoved: async (item) => {
+        await withRemote(async (userId) => {
+          const supabase = createClient();
+          await pinToLoving(supabase, userId, item);
+          await refreshCommunity(userId);
+        });
+      },
+      follow: async (targetId) => {
+        await withRemote(async (userId) => {
+          const supabase = createClient();
+          await followUser(supabase, userId, targetId);
+          await refreshCommunity(userId);
+        });
+      },
+      unfollow: async (targetId) => {
+        await withRemote(async (userId) => {
+          const supabase = createClient();
+          await unfollowUser(supabase, userId, targetId);
+          await refreshCommunity(userId);
+        });
+      },
+      addFriend: async (targetId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await requestFriend(supabase, targetId);
+          await refreshCommunity();
+        });
+      },
+      acceptFriend: async (otherId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await respondFriend(supabase, otherId, true);
+          await refreshCommunity();
+        });
+      },
+      declineFriend: async (otherId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await respondFriend(supabase, otherId, false);
+          await refreshCommunity();
+        });
+      },
+      removeFriend: async (otherId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await unfriend(supabase, otherId);
+          await refreshCommunity();
+        });
+      },
+      redeemInviteCode: async (code) => {
+        const supabase = createClient();
+        const inviterId = await redeemInvite(supabase, code);
+        await refreshCommunity();
+        return inviterId;
+      },
+      createList: async (input) => {
+        let created: MediaList | null = null;
+        await withRemote(async (userId) => {
+          const supabase = createClient();
+          created = await createCustomListRemote(supabase, userId, input);
+          await refreshCommunity(userId);
+        });
+        return created;
+      },
+      saveList: async (listId, listPatch) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await updateListMeta(supabase, listId, listPatch);
+          await refreshCommunity();
+        });
+      },
+      removeList: async (listId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await deleteCustomList(supabase, listId);
+          await refreshCommunity();
         });
       },
       getTracked,
@@ -466,21 +727,33 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           await upsertTracked(supabase, userId, saved);
         });
       },
-      recommend: (kind, id, note, itemName) => {
+      recommend: (input) => {
         const title =
-          itemName ||
-          state.tracked[`${kind}:${id}`]?.itemName ||
-          getItem(kind, id)?.name;
+          input.itemName ||
+          state.tracked[`${input.kind}:${input.id}`]?.itemName ||
+          getItem(input.kind, input.id)?.name;
         if (!title || !state.displayName) return;
+        const visibility: RecVisibility =
+          input.recipientIds.length > 0 &&
+          input.visibility !== "public" &&
+          input.visibility !== "friends"
+            ? "direct"
+            : input.visibility;
         const tempId = crypto.randomUUID();
         const rec: Recommendation = {
           id: tempId,
           author: state.displayName,
-          itemKind: kind,
-          itemId: id,
+          authorId: user?.id ?? "local",
+          authorHandle: state.handle || "you",
+          authorAvatarPath: state.avatarPath,
+          itemKind: input.kind,
+          itemId: input.id,
           itemName: title,
-          note,
+          itemImageUrl: input.imageUrl,
+          note: input.note,
           timestamp: new Date().toISOString(),
+          visibility,
+          pinned: input.pinToProfile,
           reactions: {},
           comments: [],
         };
@@ -488,10 +761,8 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         void withRemote(async (userId) => {
           const supabase = createClient();
           const row = await insertRecommendation(supabase, userId, {
-            kind,
-            itemId: id,
+            ...input,
             itemName: title,
-            note,
           });
           setState((s) => ({
             ...s,
@@ -501,6 +772,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
                 : r,
             ),
           }));
+          await refreshCommunity(userId);
         });
       },
       react: (recId, emoji) => {
@@ -589,7 +861,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
         });
       },
     };
-  }, [state, ready, signedIn, user, patch, withRemote]);
+  }, [state, ready, signedIn, user, social, lists, patch, withRemote, refreshCommunity]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

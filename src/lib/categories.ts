@@ -128,6 +128,13 @@ export function isFinishedStatus(kind: CategoryKind, status: string): boolean {
   return false;
 }
 
+export function isCurrentlyOnStatus(kind: CategoryKind, status: string): boolean {
+  if (kind === "tv") return status === "watching";
+  if (kind === "books") return status === "reading";
+  if (kind === "movies") return status === "want";
+  return status === "following";
+}
+
 export function lookItUpUrl(name: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(name)}`;
 }

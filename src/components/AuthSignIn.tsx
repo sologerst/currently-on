@@ -8,9 +8,11 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 export function AuthSignIn({
   errorMessage,
   splash = false,
+  next = "/friends",
 }: {
   errorMessage?: string | null;
   splash?: boolean;
+  next?: string;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -41,7 +43,7 @@ export function AuthSignIn({
     setMessage(null);
     try {
       const supabase = createClient();
-      const redirectTo = `${window.location.origin}/auth/confirm?next=/friends`;
+      const redirectTo = `${window.location.origin}/auth/confirm?next=${encodeURIComponent(next)}`;
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
         options: {
@@ -74,7 +76,7 @@ export function AuthSignIn({
         type: "email",
       });
       if (error) throw error;
-      router.replace("/friends");
+      router.replace(next);
       router.refresh();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Invalid code");
