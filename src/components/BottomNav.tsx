@@ -8,7 +8,7 @@ const TABS = [
   {
     href: "/diary",
     label: "Profile",
-    match: (p: string) => p.startsWith("/diary"),
+    match: (p: string) => p.startsWith("/diary") || p.startsWith("/u/"),
     icon: "◉",
   },
   {
@@ -20,7 +20,7 @@ const TABS = [
   {
     href: "/friends",
     label: "Friends",
-    match: (p: string) => p.startsWith("/friends"),
+    match: (p: string) => p.startsWith("/friends") || p.startsWith("/join"),
     icon: "◎",
   },
 ] as const;

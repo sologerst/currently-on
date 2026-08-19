@@ -15,6 +15,7 @@ const MENU = [
   { href: "/books", label: "Books" },
   { href: "/friends", label: "Friends" },
   { href: "/diary", label: "Profile" },
+  { href: "/friends?tab=invite", label: "Invite" },
   { href: "/calendar", label: "Calendar" },
 ];
 
@@ -132,7 +133,13 @@ export function TopBar({ splash = false }: { splash?: boolean }) {
                       n.read ? "text-muted" : "bg-white/5 text-white"
                     }`}
                   >
-                    {n.text}
+                    {n.link ? (
+                      <Link href={n.link} className="block">
+                        {n.text}
+                      </Link>
+                    ) : (
+                      n.text
+                    )}
                   </li>
                 ))}
               </ul>

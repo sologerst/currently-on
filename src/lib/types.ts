@@ -50,14 +50,22 @@ export type Comment = {
   timestamp: string;
 };
 
+export type RecVisibility = "public" | "friends" | "direct";
+
 export type Recommendation = {
   id: string;
   author: string;
+  authorId: string;
+  authorHandle: string;
+  authorAvatarPath?: string | null;
   itemKind: CategoryKind;
   itemId: string;
   itemName: string;
+  itemImageUrl?: string;
   note: string;
   timestamp: string;
+  visibility: RecVisibility;
+  pinned: boolean;
   reactions: Record<string, string[]>;
   comments: Comment[];
 };
@@ -75,10 +83,16 @@ export type AppNotification = {
   text: string;
   read: boolean;
   timestamp: string;
+  link?: string;
 };
 
 export type PersistedState = {
   displayName: string;
+  handle: string;
+  bio: string;
+  avatarPath: string | null;
+  visibility: "public" | "friends" | "private";
+  inviteCode: string;
   tracked: Record<string, TrackedRecord>;
   recommendations: Recommendation[];
   diary: DiaryEntry[];

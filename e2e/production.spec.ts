@@ -40,10 +40,13 @@ test.describe("Utility routes", () => {
     expect(resp?.status()).toBe(200);
   });
 
-  test("/search loads (200)", async ({ page }) => {
-    const resp = await page.goto("/search?q=harbor", {
-      waitUntil: "domcontentloaded",
-    });
+  test("/join/demo loads (200)", async ({ page }) => {
+    const resp = await page.goto("/join/demo", { waitUntil: "domcontentloaded" });
+    expect(resp?.status()).toBe(200);
+  });
+
+  test("/u/unknown profile page loads (200)", async ({ page }) => {
+    const resp = await page.goto("/u/unknown", { waitUntil: "domcontentloaded" });
     expect(resp?.status()).toBe(200);
   });
 });
