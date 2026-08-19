@@ -16,6 +16,7 @@ export function PeopleActions({ person }: { person: Person }) {
     acceptFriend,
     declineFriend,
     removeFriend,
+    blockUser,
     signedIn,
   } = useTracker();
   if (!signedIn || person.id === userId) return null;
@@ -70,6 +71,13 @@ export function PeopleActions({ person }: { person: Person }) {
           Add friend
         </button>
       )}
+      <button
+        type="button"
+        className="btn-ghost !px-3 !py-1.5 text-[10px] text-white/40"
+        onClick={() => void blockUser(person.id)}
+      >
+        Block
+      </button>
     </div>
   );
 }

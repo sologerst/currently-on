@@ -88,6 +88,32 @@ export type Database = {
           },
         ];
       };
+      profile_invites: {
+        Row: {
+          code: string;
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          code?: string;
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "profile_invites_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_path: string | null;
@@ -96,7 +122,6 @@ export type Database = {
           display_name: string;
           handle: string | null;
           id: string;
-          invite_code: string;
           updated_at: string;
           visibility: string;
         };
@@ -107,7 +132,6 @@ export type Database = {
           display_name?: string;
           handle?: string | null;
           id: string;
-          invite_code?: string;
           updated_at?: string;
           visibility?: string;
         };
@@ -118,7 +142,6 @@ export type Database = {
           display_name?: string;
           handle?: string | null;
           id?: string;
-          invite_code?: string;
           updated_at?: string;
           visibility?: string;
         };
@@ -503,8 +526,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      are_friends: { Args: { a: string; b: string }; Returns: boolean };
-      can_view_profile: { Args: { owner_id: string }; Returns: boolean };
+      block_person: { Args: { other_id: string }; Returns: undefined };
       ensure_standard_lists: { Args: { p_user_id: string }; Returns: undefined };
       find_profile_by_email: {
         Args: { p_email: string };
@@ -529,7 +551,7 @@ export type Database = {
         }[];
       };
       my_feed_ids: { Args: Record<PropertyKey, never>; Returns: { id: string }[] };
-      normalize_handle: { Args: { raw: string }; Returns: string };
+      my_invite_code: { Args: Record<PropertyKey, never>; Returns: string };
       redeem_invite: { Args: { code: string }; Returns: string };
       request_friend: {
         Args: { target_id: string };
@@ -546,6 +568,7 @@ export type Database = {
         Args: { accept: boolean; other_id: string };
         Returns: undefined;
       };
+      rotate_invite_code: { Args: Record<PropertyKey, never>; Returns: string };
       search_people: {
         Args: { q: string };
         Returns: {
@@ -557,6 +580,7 @@ export type Database = {
           visibility: string;
         }[];
       };
+      unblock_person: { Args: { other_id: string }; Returns: undefined };
       unfriend: { Args: { other_id: string }; Returns: undefined };
       unique_handle: { Args: { desired: string }; Returns: string };
     };

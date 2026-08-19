@@ -27,6 +27,9 @@ import {
   redeemInvite,
   requestFriend,
   respondFriend,
+  rotateInviteCode,
+  blockPerson,
+  unblockPerson,
   unfriend,
   unfollowUser,
   updateListMeta,
@@ -206,6 +209,9 @@ type TrackerApi = {
   acceptFriend: (otherId: string) => Promise<void>;
   declineFriend: (otherId: string) => Promise<void>;
   removeFriend: (otherId: string) => Promise<void>;
+  blockUser: (otherId: string) => Promise<void>;
+  unblockUser: (otherId: string) => Promise<void>;
+  rotateInvite: () => Promise<string>;
   redeemInviteCode: (code: string) => Promise<string>;
   createList: (input: {
     title: string;
@@ -589,6 +595,29 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           await unfriend(supabase, otherId);
           await refreshCommunity();
         });
+      },
+      blockUser: async (otherId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await blockPerson(supabase, otherId);
+          await refreshCommunity();
+        });
+      },
+      unblockUser: async (otherId) => {
+        await withRemote(async () => {
+          const supabase = createClient();
+          await unblockPerson(supabase, otherId);
+          await refreshCommunity();
+        });
+      },
+      rotateInvite: async () => {
+        let code = "";
+        await withRemote(async () => {
+          const supabase = createClient();
+          code = await rotateInviteCode(supabase);
+          setState((s) => ({ ...s, inviteCode: code }));
+        });
+        return code;
       },
       redeemInviteCode: async (code) => {
         const supabase = createClient();

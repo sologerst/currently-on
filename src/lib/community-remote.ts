@@ -400,6 +400,22 @@ export async function unfriend(supabase: Client, otherId: string) {
   if (error) throw error;
 }
 
+export async function blockPerson(supabase: Client, otherId: string) {
+  const { error } = await supabase.rpc("block_person", { other_id: otherId });
+  if (error) throw error;
+}
+
+export async function unblockPerson(supabase: Client, otherId: string) {
+  const { error } = await supabase.rpc("unblock_person", { other_id: otherId });
+  if (error) throw error;
+}
+
+export async function rotateInviteCode(supabase: Client): Promise<string> {
+  const { data, error } = await supabase.rpc("rotate_invite_code");
+  if (error) throw error;
+  return data;
+}
+
 export async function redeemInvite(supabase: Client, code: string): Promise<string> {
   const { data, error } = await supabase.rpc("redeem_invite", { code });
   if (error) throw error;
@@ -567,9 +583,15 @@ export async function loadRemoteState(
   supabase: Client,
   userId: string,
 ): Promise<PersistedState> {
-  const [profileRes, trackedRes, diaryRes, notificationsRes, recommendations] =
+  const [profileRes, trackedRes, diaryRes, notificationsRes, recommendations, inviteRes] =
     await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select(
+          "id, display_name, handle, bio, avatar_path, visibility, created_at, updated_at",
+        )
+        .eq("id", userId)
+        .maybeSingle(),
       supabase.from("tracked_items").select("*").eq("user_id", userId),
       supabase
         .from("diary_entries")
@@ -582,6 +604,7 @@ export async function loadRemoteState(
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
       loadRecommendations(supabase),
+      supabase.rpc("my_invite_code"),
     ]);
 
   if (profileRes.error) throw profileRes.error;
@@ -640,7 +663,7 @@ export async function loadRemoteState(
     bio: profile?.bio ?? "",
     avatarPath: profile?.avatar_path ?? null,
     visibility: (profile?.visibility as OwnProfile["visibility"]) || "public",
-    inviteCode: profile?.invite_code ?? "",
+    inviteCode: inviteRes.error ? "" : (inviteRes.data ?? ""),
     tracked,
     diary,
     notifications,
@@ -746,6 +769,9 @@ export async function insertRecommendation(
   userId: string,
   input: RecommendInput,
 ) {
+  const note = input.note.trim();
+  if (!note) throw new Error("A why-note is required");
+
   const visibility: RecVisibility =
     input.recipientIds.length > 0 &&
     input.visibility !== "public" &&
@@ -761,7 +787,7 @@ export async function insertRecommendation(
       item_id: input.id,
       item_name: input.itemName,
       item_image_url: input.imageUrl ?? null,
-      note: input.note,
+      note,
       visibility,
       pinned: input.pinToProfile,
     })
@@ -787,7 +813,7 @@ export async function insertRecommendation(
       id: input.id,
       name: input.itemName,
       imageUrl: input.imageUrl,
-      note: input.note,
+      note,
     });
   }
 

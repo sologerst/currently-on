@@ -6,8 +6,9 @@ import { invitePath, profileLabel } from "@/lib/community";
 import { useTracker } from "@/lib/tracker";
 
 export function InvitePanel() {
-  const { state } = useTracker();
+  const { state, rotateInvite } = useTracker();
   const [copied, setCopied] = useState(false);
+  const [rotating, setRotating] = useState(false);
   const url = useMemo(() => {
     if (!state.inviteCode || typeof window === "undefined") return "";
     return `${window.location.origin}${invitePath(state.inviteCode)}`;
@@ -26,6 +27,15 @@ export function InvitePanel() {
       setTimeout(() => setCopied(false), 1600);
     } catch {
       setCopied(false);
+    }
+  }
+
+  async function onRotate() {
+    setRotating(true);
+    try {
+      await rotateInvite();
+    } finally {
+      setRotating(false);
     }
   }
 
@@ -70,6 +80,14 @@ export function InvitePanel() {
             Share
           </button>
         )}
+        <button
+          type="button"
+          className="btn-ghost"
+          disabled={rotating}
+          onClick={() => void onRotate()}
+        >
+          {rotating ? "Rotating…" : "New link"}
+        </button>
       </div>
       {url && (
         // eslint-disable-next-line @next/next/no-img-element
