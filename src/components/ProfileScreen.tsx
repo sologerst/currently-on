@@ -124,7 +124,11 @@ export function ProfileScreen({
   const person = own ? ownPerson : remotePerson;
   const lists = own ? ownLists : remoteLists;
   const recs = own
-    ? state.recommendations.filter((r) => r.visibility === "public")
+    ? state.recommendations.filter(
+        (r) =>
+          r.visibility === "public" &&
+          (userId ? r.authorId === userId : r.authorHandle === state.handle),
+      )
     : remoteRecs;
 
   if (!ready || (!own && !person && !missing)) {

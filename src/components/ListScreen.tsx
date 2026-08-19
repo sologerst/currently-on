@@ -251,6 +251,7 @@ export function ListScreen({
                           item.itemId,
                           person.displayName || person.handle,
                           item.itemName,
+                          item.imageUrl,
                         )
                       }
                     >

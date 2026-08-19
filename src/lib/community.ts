@@ -1,4 +1,5 @@
 import type { Person, ProfileVisibility, SocialGraph, FriendshipState } from "./community-types";
+import type { RecVisibility } from "./types";
 
 export const STANDARD_LIST_SLUGS = [
   "currently-on",
@@ -71,4 +72,27 @@ export function friendshipOf(
   if (social.incomingRequestIds.includes(personId)) return "pending_in";
   if (social.outgoingRequestIds.includes(personId)) return "pending_out";
   return "none";
+}
+
+/** Scoped feed: own recs + friends (public/friends) + follows (public) + directs. */
+export function recBelongsInFeed(opts: {
+  viewerId: string;
+  authorId: string;
+  visibility: RecVisibility;
+  friendIds: string[];
+  followingIds: string[];
+  sentToViewer: boolean;
+}): boolean {
+  if (opts.authorId === opts.viewerId) return true;
+  if (opts.sentToViewer) return true;
+  if (
+    opts.friendIds.includes(opts.authorId) &&
+    (opts.visibility === "public" || opts.visibility === "friends")
+  ) {
+    return true;
+  }
+  if (opts.followingIds.includes(opts.authorId) && opts.visibility === "public") {
+    return true;
+  }
+  return false;
 }

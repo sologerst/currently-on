@@ -424,6 +424,7 @@ export function FriendsScreen() {
                           r.itemId,
                           r.author,
                           r.itemName,
+                          r.itemImageUrl || cover?.imageUrl,
                         )
                       }
                     >

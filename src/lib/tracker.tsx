@@ -243,6 +243,7 @@ type TrackerApi = {
     id: string,
     friend: string,
     itemName?: string,
+    imageUrl?: string,
   ) => void;
   markAllRead: () => void;
   reactions: string[];
@@ -830,7 +831,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
           }));
         });
       },
-      addFromFriend: (kind, id, friend, itemName) => {
+      addFromFriend: (kind, id, friend, itemName, imageUrl) => {
         let saved: TrackedRecord | null = null;
         patch((s) => {
           const copy = structuredClone(s);
@@ -838,6 +839,7 @@ export function TrackerProvider({ children }: { children: React.ReactNode }) {
             myStatus: "recommended" as MyStatus,
             recommendedBy: friend,
             ...(itemName ? { itemName } : {}),
+            ...(imageUrl ? { imageUrl } : {}),
           });
           return copy;
         });
